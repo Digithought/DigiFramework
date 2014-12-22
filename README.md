@@ -23,6 +23,8 @@ The implementation is made up of the following components:
 Example
 -------
 
+This example uses [BlackNet](https://github.com/Digithought/) to interface with a dual motor controller.
+
     // This is the actor interface - what the actor "looks like" from outside
     public interface IMotorController : IStatefulActor<MotorControllerStates, MotorControllerTriggers>, IMotorControllerMethods
     {
@@ -47,8 +49,6 @@ Example
       Unstarted,
       Starting,
       Started,
-      Ready,
-      Commanding,
       Stopping
     }
     
@@ -57,7 +57,6 @@ Example
       Start,
       Started,
       Completed,
-      Command,
       Stop,
       Errored,
       Faulted,
@@ -262,5 +261,18 @@ Example
     		Fire(MotorControllerTriggers.Stopped);
     	}
     }
-	
+
+The above is used something like this:
+
+	var controller = new MotorController(config).Actor;
+	controller.Start();
+	controller.StateChanged += (o, t) => { if (t.Target == MotorControllerStates.Started) controller.SetSpeed(0.5f, -0.5f); };
+
+The implementation above looks pretty straight forward hopefully.  Here are some subtleties:
+* Note that the MotorController implementation can be written in a single-threaded manner.  This is a big advantage to actors: no shared state, just write your actor single threadedly.
+* No logic is needed to check that the controller is in the correct state before setting the speed or what not; this is accomplished by the declaration of which commands are valid during which states in InitializeCommands.
+* The Start and Stop commands aren't implemented in the class, yet they are available in the actor interface.  Magic!
+* Errors are handled by the actor, the propagated to the callers.  It is important that actors listen to events, such as StateChanged on one another if an actor cares whether another one faults for instance, but all calls are fire-and-forget.  Any functions that cause an exception will result in the default value for the return type.
+* If a trigger is fired during a state transition (as often they are due to logic in "...Entered" events) the trigger doesn't fire until the transition completes.  This ensures that state events never appear to be out of order.
+
 I hope to add more examples, including how to use the state machine's Condition to automatically advance states.
