@@ -46,7 +46,7 @@ namespace Digithought.Framework
 		protected void Fire(TTrigger trigger)
 		{
 			if (_states.Transitioning)
-				Act(() => _states.Fire(trigger));
+				Act(() => Fire(trigger));
 			else
 				_states.Fire(trigger);
 		}
@@ -58,7 +58,7 @@ namespace Digithought.Framework
 
 		protected virtual void HandleStateChanged(TState oldState, StateMachine<TState, TTrigger>.Transition transition)
 		{
-			Logging.Trace(FrameworkLoggingCategory.StateChange, GetType().Name + "[" + GetHashCode() + "]: " + oldState + " -> " + transition.Target + " (" + transition.Trigger + ").");
+			Logging.Trace(FrameworkLoggingCategory.States, GetType().Name + "[" + GetHashCode() + "]: " + oldState + " -> " + transition.Target + " (" + transition.Trigger + ").");
 		}
 
 		private IReadOnlyDictionary<string, Command<TState, TTrigger>> _commands;
@@ -84,7 +84,12 @@ namespace Digithought.Framework
 			if (_commands.TryGetValue(method.Name, out command) && (command.ValidInStates == null || command.ValidInStates.Any(s => InState(s))))
 			{
 				if (command.Trigger.HasValue)
+				{
+					#if (TRACE_ACTS)
+					Logging.Trace(FrameworkLoggingCategory.Acts, "Call to " + GetType().Name + "[" + GetHashCode() + "]." + method.Name + " - triggering command: " + command.Trigger.Value);
+					#endif
 					Fire(command.Trigger.Value);
+				}
 				else
 					return base.Invoke(method, parameters);
 			}

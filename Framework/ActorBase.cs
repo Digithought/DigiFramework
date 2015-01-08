@@ -117,7 +117,7 @@ namespace Digithought.Framework
 		public virtual object Invoke(MethodInfo method, params object[] parameters)
 		{
 			#if (TRACE_ACTS)
-			Logging.Trace(FrameworkLoggingCategory.Acts, "Call to " + GetType().Name + "[" + GetHashCode() + "] " + "." + method.Name + Newtonsoft.Json.JsonConvert.SerializeObject(parameters));
+			Logging.Trace(FrameworkLoggingCategory.Acts, "Call to " + GetType().Name + "[" + GetHashCode() + "]." + method.Name + Newtonsoft.Json.JsonConvert.SerializeObject(parameters));
 			#endif
 
 			if (method.ReturnType == typeof(void))
@@ -126,6 +126,7 @@ namespace Digithought.Framework
 				(
 					() => InnerInvoke(() => UnravelTargetException(() => method.Invoke(this, parameters)))
 				);
+
 				return null;
 			}
 			else
@@ -135,8 +136,10 @@ namespace Digithought.Framework
 				(
 					() => InnerInvoke(() => UnravelTargetException(() => { result = method.Invoke(this, parameters); }))
 				);
+
 				return result;
 			}
+
 		}
 
 		protected static object GetDefaultReturnValue(MethodInfo method)

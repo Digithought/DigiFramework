@@ -99,10 +99,15 @@ namespace Digithought.Framework
 
 		public bool InState(TState state)
 		{
-			if (state.Equals(State))
+			return StateIn(State, state);
+		}
+
+		public bool StateIn(TState state, TState target)
+		{
+			if (state.Equals(target))
 				return true;
 			var parent = GetState(state).Parent;
-			return parent != null && InState(parent.Value);
+			return parent != null && StateIn(parent.Value, target);
 		}
 
 		public void Fire(TTrigger trigger)
@@ -110,25 +115,36 @@ namespace Digithought.Framework
 			if (!Transitioning)
 			{
 				var oldState = GetState(State);
-				var transition = oldState.Transitions
-					.Where(t => t.Condition == null && t.Trigger.Equals(trigger))
-					.FirstOrDefault();
-				if (transition != null)
+				var state = oldState;
+				Transitioning = true;
+				try
 				{
-					Transitioning = true;
-					try
+					while (state != null)
 					{
-						InternalTransition(oldState, transition);
-						while (InternalUpdate()) /* repeat until no more transitions are applicable. */;
+						var transition = state.Transitions
+							.Where(t => t.Condition == null && t.Trigger.Equals(trigger))
+							.FirstOrDefault();
+						if (transition != null)
+						{
+							InternalTransition(oldState, transition);
+							while (InternalUpdate()) /* repeat until no more transitions are applicable. */;
+							break;
+						}
+						else 
+						{
+							state = state.Parent == null ? null : GetState(state.Parent.Value);
+							if (state == null)
+								Logging.Trace(FrameworkLoggingCategory.States, "WARNING: Trigger " + trigger + " fired and has no transitions.");
+						}
 					}
-					finally
-					{
-						Transitioning = false;
-					}
+				}
+				finally
+				{
+					Transitioning = false;
 				}
 			}
 			else
-				DoHandleError(new FrameworkException("Invalid trigger " + trigger + " while in state " + State));
+				DoHandleError(new FrameworkException("Cannot trigger " + trigger + " while transitioning (state " + State + ")."));
 		}
 
 		private void WrapCallback(Action action)
