@@ -14,12 +14,12 @@ namespace Digithought.Framework
 		where TActor : class
 	{
 		private readonly TActor _actor;
-		private readonly WorkerQueue _worker = new WorkerQueue(System.Threading.ThreadPriority.AboveNormal);
+		private readonly WorkerQueue _worker;
 
-		protected ActorBase()
+		public ActorBase(WorkerQueue worker = null, System.Threading.ThreadPriority? priority = null)
 		{
 			_actor = ProxyBuilder.Create<TActor>(this.Invoke);
-			_worker = new WorkerQueue(System.Threading.ThreadPriority.BelowNormal);
+			_worker = worker ?? new WorkerQueue(priority == null ? System.Threading.ThreadPriority.Normal : priority.Value);
 		}
 
 		protected WorkerQueue Worker

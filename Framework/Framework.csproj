@@ -32,7 +32,7 @@
   <ItemGroup>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\WeedebudNet\packages\Newtonsoft.Json.6.0.6\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\..\Weedebud\Trunk\Source\packages\Newtonsoft.Json.6.0.8\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -49,6 +49,7 @@
     <Compile Include="FrameworkFault.cs" />
     <Compile Include="FrameworkLoggingCategory.cs" />
     <Compile Include="FrameworkTimeout.cs" />
+    <Compile Include="IDriver.cs" />
     <Compile Include="IStatefulActor.cs" />
     <Compile Include="LinqExtensions.cs" />
     <Compile Include="Logging.cs" />

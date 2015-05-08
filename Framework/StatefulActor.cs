@@ -12,12 +12,13 @@ namespace Digithought.Framework
 		where TState : struct
 		where TTrigger : struct
 	{
-		public StatefulActor()
+		public StatefulActor(WorkerQueue worker = null, System.Threading.ThreadPriority? priority = null)
+			: base(worker, priority)
 		{
 			_states = InitializeStates();
 			_states.HandleError = StateException;
 			_states.StateChanged += HandleStateChanged;
-			_commands = InitializeCommands().Union(BuiltInCommands).ToDictionary(e => e.Key, e => e.Value);
+			_commands = InitializeCommands().ToDictionary(e => e.Key, e => e.Value);
 		}
 
 		private StateMachine<TState, TTrigger> _states;
@@ -70,20 +71,13 @@ namespace Digithought.Framework
 			return new Command<TState, TTrigger>(validInStates, trigger);
 		}
 
-		private static readonly IDictionary<string, Command<TState, TTrigger>> BuiltInCommands = 
-			new Dictionary<string, Command<TState, TTrigger>> 
-			{
-				{ "get_State", NewCommand() },
-				{ "add_StateChanged", NewCommand() }, 
-				{ "remove_StateChanged", NewCommand() } 
-			};
-
 		public override object Invoke(MethodInfo method, params object[] parameters)
 		{
 			Command<TState, TTrigger> command;
-			if (_commands.TryGetValue(method.Name, out command) && (command.ValidInStates == null || command.ValidInStates.Any(s => InState(s))))
+			var commandFound = _commands.TryGetValue(method.Name, out command);
+			if (!commandFound || (commandFound && (command.ValidInStates == null || command.ValidInStates.Any(s => InState(s)))))
 			{
-				if (command.Trigger.HasValue)
+				if (commandFound && command.Trigger.HasValue)
 				{
 					#if (TRACE_ACTS)
 					Logging.Trace(FrameworkLoggingCategory.Acts, "Call to " + GetType().Name + "[" + GetHashCode() + "]." + method.Name + " - triggering command: " + command.Trigger.Value);
