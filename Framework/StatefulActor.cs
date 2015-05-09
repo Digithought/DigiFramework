@@ -60,6 +60,19 @@ namespace Digithought.Framework
 		protected virtual void HandleStateChanged(TState oldState, StateMachine<TState, TTrigger>.Transition transition)
 		{
 			Logging.Trace(FrameworkLoggingCategory.States, GetType().Name + "[" + GetHashCode() + "]: " + oldState + " -> " + transition.Target + " (" + transition.Trigger + ").");
+
+			// Call back any state watchers
+			List<TState> toRemove = null;
+			foreach (var watcher in _watchers)
+				if (!InState(watcher.Key))
+				{
+					if (toRemove == null)
+						toRemove = new List<TState>();
+					toRemove.Add(watcher.Key);
+				}
+			if (toRemove != null)
+				foreach (var r in toRemove)
+					_watchers.Remove(r);
 		}
 
 		private IReadOnlyDictionary<string, Command<TState, TTrigger>> _commands;
@@ -108,6 +121,41 @@ namespace Digithought.Framework
 		protected static StateMachine<TState, TTrigger>.Transition NewTransition(TTrigger trigger, TState target, StateMachine<TState, TTrigger>.StateTransitionConditionHandler condition = null, Action<TState> setupState = null)
 		{
 			return new StateMachine<TState, TTrigger>.Transition(trigger, target, condition, setupState);
+		}
+
+		private Dictionary<TState, Action> _watchers = new Dictionary<TState,Action>();
+
+		/// <summary> Calls back when actor leaves state (immediately if not in given state). </summary>
+		public void WatchState(TState state, Action callback)
+		{
+			if (!InState(state))
+				callback();
+			else
+				_watchers.Add(state, callback);
+		}
+
+		protected void RefreshWhileInState(Action<float> callback, int milliseconds, TState? state = null)
+		{
+			var theState = state ?? State;
+			var watch = new System.Diagnostics.Stopwatch();
+			watch.Start();
+			var timer = new System.Threading.Timer
+				(
+					s => Act(() => 
+						{
+							var ellapsed = (float)watch.ElapsedTicks / (float)System.Diagnostics.Stopwatch.Frequency;
+							watch.Restart(); 
+							callback(ellapsed); 
+						}), 
+					null, 
+					milliseconds, 
+					milliseconds
+				);
+			WatchState
+			(
+				theState,
+				timer.Dispose
+			);
 		}
 	}
 }

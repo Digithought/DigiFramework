@@ -149,5 +149,10 @@ namespace Digithought.Framework
 			else
 				return null;
 		}
+
+		protected void DoIn(int milliseconds, Action callback)
+		{
+			System.Threading.ThreadPool.QueueUserWorkItem(s => { System.Threading.Thread.Sleep(milliseconds); Act(callback); });
+		}
 	}
 }
