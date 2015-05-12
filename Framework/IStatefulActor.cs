@@ -10,5 +10,6 @@ namespace Digithought.Framework
 	{
 		TState State { get; }
 		event StateMachine<TState, TTrigger>.StateChangedHandler StateChanged;
+		bool InState(TState state);
 	}
 }

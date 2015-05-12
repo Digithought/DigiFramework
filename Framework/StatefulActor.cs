@@ -39,7 +39,7 @@ namespace Digithought.Framework
 			remove { _states.StateChanged -= value; }
 		}
 
-		protected bool InState(TState state)
+		public bool InState(TState state)
 		{
 			return _states.InState(state);
 		}
@@ -66,6 +66,7 @@ namespace Digithought.Framework
 			foreach (var watcher in _watchers)
 				if (!InState(watcher.Key))
 				{
+					watcher.Value(); 
 					if (toRemove == null)
 						toRemove = new List<TState>();
 					toRemove.Add(watcher.Key);
@@ -123,7 +124,7 @@ namespace Digithought.Framework
 			return new StateMachine<TState, TTrigger>.Transition(trigger, target, condition, setupState);
 		}
 
-		private Dictionary<TState, Action> _watchers = new Dictionary<TState,Action>();
+		private Dictionary<TState, Action> _watchers = new Dictionary<TState, Action>();
 
 		/// <summary> Calls back when actor leaves state (immediately if not in given state). </summary>
 		public void WatchState(TState state, Action callback)
@@ -134,18 +135,21 @@ namespace Digithought.Framework
 				_watchers.Add(state, callback);
 		}
 
-		protected void RefreshWhileInState(Action<float> callback, int milliseconds, TState? state = null)
+		protected void RefreshWhileInState(int milliseconds, Action<float> callback, TState? whileIn = null)
 		{
-			var theState = state ?? State;
+			var inState = whileIn ?? State;
 			var watch = new System.Diagnostics.Stopwatch();
 			watch.Start();
 			var timer = new System.Threading.Timer
 				(
 					s => Act(() => 
 						{
-							var ellapsed = (float)watch.ElapsedTicks / (float)System.Diagnostics.Stopwatch.Frequency;
-							watch.Restart(); 
-							callback(ellapsed); 
+							if (InState(inState))
+							{ 
+								var ellapsed = (float)watch.ElapsedTicks / (float)System.Diagnostics.Stopwatch.Frequency;
+								watch.Restart(); 
+								callback(ellapsed); 
+							}
 						}), 
 					null, 
 					milliseconds, 
@@ -153,9 +157,46 @@ namespace Digithought.Framework
 				);
 			WatchState
 			(
-				theState,
+				inState,
 				timer.Dispose
 			);
+		}
+
+		protected void TimeoutWhileInState(int milliseconds, Action callback, TState? whileIn = null)
+		{
+			var inState = whileIn ?? State;
+			var timer = new System.Threading.Timer
+				(
+					s => Act(() =>
+					{
+						if (InState(inState))
+							callback();
+					}),
+					null,
+					milliseconds, 
+					System.Threading.Timeout.Infinite
+				);
+			WatchState
+			(
+				inState,
+				timer.Dispose
+			);
+		}
+
+		protected void WatchOtherWhileInState<OS, OT>(IStatefulActor<OS, OT> other, Func<OS, bool> condition, Action action, TState? whileIn = null)
+			where OS : struct
+		{
+			var inState = whileIn ?? State;
+			if (InState(inState))
+			{
+				StateMachine<OS, OT>.StateChangedHandler changedHandler = (OS oldState, StateMachine<OS, OT>.Transition transition) =>
+				{
+					if (condition(other.State))
+						action();
+				};
+				other.StateChanged += changedHandler;
+				WatchState(inState, () => { other.StateChanged -= changedHandler; });
+			}
 		}
 	}
 }
