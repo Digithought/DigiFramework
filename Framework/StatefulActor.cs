@@ -52,6 +52,12 @@ namespace Digithought.Framework
 				_states.Fire(trigger);
 		}
 
+		/// <summary> Retests the state conditions. </summary>
+		protected void UpdateStates()
+		{
+			_states.Update();
+		}
+
 		protected virtual void StateException(Exception e)
 		{
 			HandleException(e);
@@ -183,7 +189,7 @@ namespace Digithought.Framework
 			);
 		}
 
-		protected void WatchOtherWhileInState<OS, OT>(IStatefulActor<OS, OT> other, Func<OS, bool> condition, Action action, TState? whileIn = null)
+		protected void WatchOtherWhileInState<OS, OT>(IStatefulActor<OS, OT> other, Func<StateMachine<OS, OT>.Transition, bool> condition, Action action, TState? whileIn = null)
 			where OS : struct
 		{
 			var inState = whileIn ?? State;
@@ -191,7 +197,7 @@ namespace Digithought.Framework
 			{
 				StateMachine<OS, OT>.StateChangedHandler changedHandler = (OS oldState, StateMachine<OS, OT>.Transition transition) =>
 				{
-					if (condition(other.State))
+					if (condition(transition))
 						action();
 				};
 				other.StateChanged += changedHandler;
