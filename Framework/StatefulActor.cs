@@ -72,7 +72,8 @@ namespace Digithought.Framework
 			foreach (var watcher in _watchers)
 				if (!InState(watcher.Key))
 				{
-					watcher.Value(); 
+					foreach (var act in watcher.Value)
+						act();
 					if (toRemove == null)
 						toRemove = new List<TState>();
 					toRemove.Add(watcher.Key);
@@ -130,7 +131,7 @@ namespace Digithought.Framework
 			return new StateMachine<TState, TTrigger>.Transition(trigger, target, condition, setupState);
 		}
 
-		private Dictionary<TState, Action> _watchers = new Dictionary<TState, Action>();
+		private Dictionary<TState, List<Action>> _watchers = new Dictionary<TState, List<Action>>();
 
 		/// <summary> Calls back when actor leaves state (immediately if not in given state). </summary>
 		public void WatchState(TState state, Action callback)
@@ -138,7 +139,12 @@ namespace Digithought.Framework
 			if (!InState(state))
 				callback();
 			else
-				_watchers.Add(state, callback);
+			{
+				if (_watchers.ContainsKey(state))
+					_watchers[state].Add(callback);
+				else
+					_watchers.Add(state, new List<Action> { callback });
+			}
 		}
 
 		protected void RefreshWhileInState(int milliseconds, Action<float> callback, TState? whileIn = null)
@@ -189,19 +195,24 @@ namespace Digithought.Framework
 			);
 		}
 
-		protected void WatchOtherWhileInState<OS, OT>(IStatefulActor<OS, OT> other, Func<StateMachine<OS, OT>.Transition, bool> condition, Action action, TState? whileIn = null)
+		protected void WatchOtherWhileInState<OS, OT>(IStatefulActor<OS, OT> other, Func<OS, StateMachine<OS, OT>.Transition, bool> condition, Action action, TState? whileIn = null)
 			where OS : struct
 		{
 			var inState = whileIn ?? State;
 			if (InState(inState))
 			{
-				StateMachine<OS, OT>.StateChangedHandler changedHandler = (OS oldState, StateMachine<OS, OT>.Transition transition) =>
+				if (condition(other.State, null))
+					action();
+				else
 				{
-					if (condition(transition))
-						action();
-				};
-				other.StateChanged += changedHandler;
-				WatchState(inState, () => { other.StateChanged -= changedHandler; });
+					StateMachine<OS, OT>.StateChangedHandler changedHandler = (OS oldState, StateMachine<OS, OT>.Transition transition) =>
+					{
+						if (condition(transition.Target, transition))
+							action();
+					};
+					other.StateChanged += changedHandler;
+					WatchState(inState, () => { other.StateChanged -= changedHandler; });
+				}
 			}
 		}
 	}
