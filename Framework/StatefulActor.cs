@@ -103,7 +103,7 @@ namespace Digithought.Framework
 					#if (TRACE_ACTS)
 					Logging.Trace(FrameworkLoggingCategory.Acts, "Call to " + GetType().Name + "[" + GetHashCode() + "]." + method.Name + " - triggering command: " + command.Trigger.Value);
 					#endif
-					Fire(command.Trigger.Value);
+					Act(() => Fire(command.Trigger.Value));	// Must queue this call otherwise this could lead to out of order invocation
 				}
 				else
 					return base.Invoke(method, parameters);
@@ -140,8 +140,9 @@ namespace Digithought.Framework
 				callback();
 			else
 			{
-				if (_watchers.ContainsKey(state))
-					_watchers[state].Add(callback);
+				List<Action> bucket;
+				if (_watchers.TryGetValue(state, out bucket))
+					bucket.Add(callback);
 				else
 					_watchers.Add(state, new List<Action> { callback });
 			}
@@ -156,6 +157,9 @@ namespace Digithought.Framework
 				(
 					s => Act(() => 
 						{
+							#if (TRACE_TIMERS)
+							Framework.Logging.Trace("Timer", GetType().Name + ": Refresh triggered after " + watch.ElapsedMilliseconds + "ms.");
+							#endif
 							if (InState(inState))
 							{ 
 								var ellapsed = (float)watch.ElapsedTicks / (float)System.Diagnostics.Stopwatch.Frequency;
@@ -170,19 +174,30 @@ namespace Digithought.Framework
 			WatchState
 			(
 				inState,
-				timer.Dispose
+				() =>
+				{
+					#if (TRACE_TIMERS)
+					Framework.Logging.Trace("Timer", GetType().Name + ": Refresh terminating due to state change.");
+					#endif
+					timer.Dispose();
+				}
 			);
 		}
 
 		protected void TimeoutWhileInState(int milliseconds, Action callback, TState? whileIn = null)
 		{
 			var inState = whileIn ?? State;
-			var timer = new System.Threading.Timer
+			System.Threading.Timer timer = null;
+			timer = new System.Threading.Timer
 				(
 					s => Act(() =>
 					{
+						#if (TRACE_TIMERS)
+						Framework.Logging.Trace("Timer", GetType().Name + ": Timeout triggered.");
+						#endif
 						if (InState(inState))
 							callback();
+						timer.Dispose();
 					}),
 					null,
 					milliseconds, 
@@ -191,29 +206,40 @@ namespace Digithought.Framework
 			WatchState
 			(
 				inState,
-				timer.Dispose
+				() =>
+				{
+					#if (TRACE_TIMERS)
+					Framework.Logging.Trace("Timer", GetType().Name + ": Timeout terminating due to state change.");
+					#endif
+					timer.Dispose();
+				}
 			);
 		}
 
-		protected void WatchOtherWhileInState<OS, OT>(IStatefulActor<OS, OT> other, Func<OS, StateMachine<OS, OT>.Transition, bool> condition, Action action, TState? whileIn = null)
+		protected void WatchOtherWhileInState<OS, OT>(IStatefulActor<OS, OT> other, WatchOtherCondition<OS, OT> condition, Action action, TState? whileIn = null)
 			where OS : struct
 		{
 			var inState = whileIn ?? State;
 			if (InState(inState))
 			{
+				StateMachine<OS, OT>.StateChangedHandler changedHandler = (OS oldState, StateMachine<OS, OT>.Transition transition) =>
+				{
+					Act(() =>
+						{
+							if (InState(inState) && condition(transition.Target, transition))
+								action();
+						}
+					);
+				};
+				other.StateChanged += changedHandler;
+				WatchState(inState, () => { other.StateChanged -= changedHandler; });
+
 				if (condition(other.State, null))
 					action();
-				else
-				{
-					StateMachine<OS, OT>.StateChangedHandler changedHandler = (OS oldState, StateMachine<OS, OT>.Transition transition) =>
-					{
-						if (condition(transition.Target, transition))
-							action();
-					};
-					other.StateChanged += changedHandler;
-					WatchState(inState, () => { other.StateChanged -= changedHandler; });
-				}
 			}
 		}
 	}
+
+	public delegate bool WatchOtherCondition<OS, OT>(OS newState, StateMachine<OS, OT>.Transition transition)
+		where OS : struct;
 }
