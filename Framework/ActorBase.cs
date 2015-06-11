@@ -41,7 +41,7 @@ namespace Digithought.Framework
 		/// actor's thread.  Another use case is to invoke something after the current logical step completes.
 		public void Act(Action action)
 		{
-			_worker.Queue(action);
+			_worker.Queue(() => InnerInvoke(action));
 		}
 
 		/// <summary> Allows an implementation to override the handling of a fault. </summary>
@@ -117,7 +117,9 @@ namespace Digithought.Framework
 		public virtual object Invoke(MethodInfo method, params object[] parameters)
 		{
 			#if (TRACE_ACTS)
-			Logging.Trace(FrameworkLoggingCategory.Acts, "Call to " + GetType().Name + "[" + GetHashCode() + "]." + method.Name + Newtonsoft.Json.JsonConvert.SerializeObject(parameters));
+			// REPLACED FOR PERFORMANCE: Newtonsoft.Json.JsonConvert.SerializeObject(parameters));
+			// Use this rather than ToString() if more detailed parameter logging is needed
+			Logging.Trace(FrameworkLoggingCategory.Acts, "Call to " + GetType().Name + "[" + GetHashCode() + "]." + method.Name + " " + String.Join(",", parameters)); 
 			#endif
 
 			if (method.ReturnType == typeof(void))
