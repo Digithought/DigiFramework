@@ -277,45 +277,45 @@ The implementation above looks pretty straight forward hopefully.  Here are some
 
 Here is an example snippet which shows how to implement WatchOtherAndUpdate, WatchOtherWhileInState, and conditions:
 
-    ...
-    NewState
-    (
-      MainsStates.GoingOnline, 
-      MainsStates.Initialized, 
-      new [] 
-      { 
-        NewTransition(MainsTriggers.Online, MainsStates.Online, OnlineWhen),
-      },
-      GoingOnlineEntered
-    ),
-    NewState
-    (
-      MainsStates.Online, 
-      MainsStates.Initialized, 
-      null,
-      OnlineEntered
-    ),
-    ...
+		...
+		NewState
+		(
+			MainsStates.GoingOnline, 
+			MainsStates.Initialized, 
+			new [] 
+			{ 
+				NewTransition(MainsTriggers.Online, MainsStates.Online, OnlineWhen),
+			},
+			GoingOnlineEntered
+		),
+		NewState
+		(
+			MainsStates.Online, 
+			MainsStates.Initialized, 
+			null,
+			OnlineEntered
+		),
+		...
 
-  private void GoingOnlineEntered(MainsStates oldState, StateMachine<MainsStates, MainsTriggers>.Transition transition)
-  {
-    Collection.Begin();
-    WatchOtherAndUpdate(Collection);
+	private void GoingOnlineEntered(MainsStates oldState, StateMachine<MainsStates, MainsTriggers>.Transition transition)
+	{
+		Collection.Begin();
+				WatchOtherAndUpdate(Collection);
 
-    FrameUploader.Start();
-    WatchOtherAndUpdate(FrameUploader);
-  }
+		FrameUploader.Start();
+				WatchOtherAndUpdate(FrameUploader);
+	}
 
-  private bool OnlineWhen(MainsStates oldState, StateMachine<MainsStates, MainsTriggers>.Transition transition)
-  {
-    return Collection.InState(CollectionStates.Operating) && FrameUploader.InState(UploaderStates.Started);
-  }
+	private bool OnlineWhen(MainsStates oldState, StateMachine<MainsStates, MainsTriggers>.Transition transition)
+	{
+		return Collection.InState(CollectionStates.Operating) && FrameUploader.InState(UploaderStates.Started);
+	}
 
-  private void OnlineEntered(MainsStates oldState, StateMachine<MainsStates, MainsTriggers>.Transition transition)
-  {
-    WatchOtherWhileInState(Collection, (s, t) => !Collection.InState(CollectionStates.Operating), () => { throw new FrameworkException("Collection stopped operating."); }, MainsStates.Online);
-    WatchOtherWhileInState(FrameUploader, (s, t) => !FrameUploader.InState(UploaderStates.Started), () => { throw new FrameworkException("FrameUploader went offline."); }, MainsStates.Online);
-  }
+	private void OnlineEntered(MainsStates oldState, StateMachine<MainsStates, MainsTriggers>.Transition transition)
+	{
+		WatchOtherWhileInState(Collection, (s, t) => !Collection.InState(CollectionStates.Operating), () => { throw new FrameworkException("Collection stopped operating."); }, MainsStates.Online);
+		WatchOtherWhileInState(FrameUploader, (s, t) => !FrameUploader.InState(UploaderStates.Started), () => { throw new FrameworkException("FrameUploader went offline."); }, MainsStates.Online);
+	}
 
 This example shows part of an actor which is responsible for managing other actors.  It attempts to startup a couple other actors and watches for their states to change.  Any time their states change, UpdateStates() will by called by WatchOtherAndUpdate(), which will re-check the OnlineWhen condition.  Once that condition goes true, the Online trigger automatically fires per the configuration above.  Once online, WatchOtherWhileInState is used to monitor that the other actors remain in the expected states.  Note that InState is used rather than equals, because there are several sub-states of Operating and Started, and all this actor cares is that those actors remain in the said super-states.  Note that an exception is thrown rather than simply firing a trigger, such as Errored.  Typically the HandleError of any stateful actor is hooked to fire such an error trigger, but this way, the reason for the trigger firing will be apparent in the log.  
 
