@@ -3,42 +3,40 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Digithought.Framework
 {
-	// TODO: Support generic methods (besides those parameterized by the interface)
+    // TODO: Support generic methods (besides those parameterized by the interface)
 
-	/// <summary> Given an interface, generates a proxy class which forwards all invocations to a single <c>IInvoker</c>. </summary>
-	/// <remarks> Inspired by NAct. </remarks>
-	/// <example> Given an interface like this:
-	///	 <code>
-	///		 public interface IHello
-	///		 {
-	///			 int SayHi(string message);
-	///		 }
-	///	 </code>
-	///	 
-	///	 Create&lt;IHello&gt;(invoker) generates a class of this nature and returns an instance:
-	///	 <code>
-	///		 public class Hello : IHello
-	///		 {
-	///			 private InvokerHandler invoker;
-	///			 
-	///			 public Hello(InvokeHandler invoker)
-	///			 {
-	///				 this.invoker = invoker;
-	///			 }
-	///			 
-	///			 public int SayHi(string message)
-	///			 {
-	///				 return (int)invoker(methodof(SayHi), new object[] { message });
-	///			 }
-	///		 }
-	///	 </code>
-	/// </example>
-	public static class ProxyBuilder
+    /// <summary> Given an interface, generates a proxy class which forwards all invocations to a single <c>IInvoker</c>. </summary>
+    /// <remarks> Inspired by NAct. </remarks>
+    /// <example> Given an interface like this:
+    ///	 <code>
+    ///		 public interface IHello
+    ///		 {
+    ///			 int SayHi(string message);
+    ///		 }
+    ///	 </code>
+    ///	 
+    ///	 Create&lt;IHello&gt;(invoker) generates a class of this nature and returns an instance:
+    ///	 <code>
+    ///		 public class Hello : IHello
+    ///		 {
+    ///			 private InvokerHandler invoker;
+    ///			 
+    ///			 public Hello(InvokeHandler invoker)
+    ///			 {
+    ///				 this.invoker = invoker;
+    ///			 }
+    ///			 
+    ///			 public int SayHi(string message)
+    ///			 {
+    ///				 return (int)invoker(methodof(SayHi), new object[] { message });
+    ///			 }
+    ///		 }
+    ///	 </code>
+    /// </example>
+    public static class ProxyBuilder
 	{
 		private const string AssemblyName = "DigithoughtDynamic";
 		private const string ModuleName = "dynamic.dll";

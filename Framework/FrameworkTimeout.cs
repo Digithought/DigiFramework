@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.Serialization;
 
 namespace Digithought.Framework
 {
-	[Serializable]
+    [Serializable]
 	public class FrameworkTimeout : FrameworkFault
 	{
 		public FrameworkTimeout(string message) : base(message)

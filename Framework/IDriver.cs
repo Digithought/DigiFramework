@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Digithought.Framework
+﻿namespace Digithought.Framework
 {
-	public interface IDriver
+    public interface IDriver
 	{
 		void Start();
 		void Stop();
