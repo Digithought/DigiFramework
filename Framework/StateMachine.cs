@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Digithought.Framework
 {
-	public class StateMachine<TState, TTrigger>
+    public class StateMachine<TState, TTrigger>
 		where TState : struct
 	{
 		public class StateInfo
@@ -21,7 +19,7 @@ namespace Digithought.Framework
 			{
 				State = state;
 				Parent = parent;
-				Transitions = Array.AsReadOnly(transitions);
+				Transitions = Array.AsReadOnly(transitions ?? new Transition[0]);
 				Entered = entered;
 				Exited = exited;
 			}
