@@ -2,12 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Digithought.Framework
 {
-	public abstract class StatefulActor<TActor, TState, TTrigger> : ActorBase<TActor>, IStatefulActor<TState, TTrigger>
+    public abstract class StatefulActor<TActor, TState, TTrigger> : ActorBase<TActor>, IStatefulActor<TState, TTrigger>
 		where TActor : class
 		where TState : struct
 		where TTrigger : struct
@@ -238,7 +236,13 @@ namespace Digithought.Framework
 					action();
 			}
 		}
-	}
+
+        protected void WatchOtherAndUpdate<OS, OT>(IStatefulActor<OS, OT> other, TState? whileIn = null)
+            where OS : struct
+        {
+            WatchOtherWhileInState(other, (s, t) => true, UpdateStates, whileIn);
+        }
+    }
 
 	public delegate bool WatchOtherCondition<OS, OT>(OS newState, StateMachine<OS, OT>.Transition transition)
 		where OS : struct;
