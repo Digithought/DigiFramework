@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Digithought.Framework
 {
@@ -15,6 +13,18 @@ namespace Digithought.Framework
                 foreach (var child in children(item))
                     yield return child;
         }
+
+		/// <summary> Flattens a list of nested items. </summary>
+		public static IEnumerable<KeyValuePair<int, TResult>> ExpandWithIndex<TSource, TResult>(this IEnumerable<TSource> items, Func<TSource, IEnumerable<TResult>> children)
+		{
+			var i = 0;
+			foreach (var item in items)
+			{
+				foreach (var child in children(item))
+					yield return new KeyValuePair<int, TResult>(i, child);
+				++i;
+			}
+		}
 
         /// <summary> Removes the specified items by the given predicate. </summary>
         public static void Remove<T>(this ICollection<T> items, Func<T, bool> predicate)
@@ -41,6 +51,17 @@ namespace Digithought.Framework
 		{
 			foreach (var i in items)
 				forEach(i);
+		}
+
+		/// <summary> Invokes the given method for each item in the enumeration, including the enumeration index. </summary>
+		public static void EachWithIndex<T>(this IEnumerable<T> items, Action<int, T> forEach)
+		{
+			var i = 0;
+			foreach (var item in items)
+			{
+				forEach(i, item);
+				++i;
+			}
 		}
 	}
 }
