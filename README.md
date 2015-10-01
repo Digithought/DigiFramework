@@ -272,7 +272,52 @@ The implementation above looks pretty straight forward hopefully.  Here are some
 * Note that the MotorController implementation can be written in a single-threaded manner.  This is a big advantage to actors: no shared state, just write your actor single threadedly.
 * No logic is needed to check that the controller is in the correct state before setting the speed or what not; this is accomplished by the declaration of which commands are valid during which states in InitializeCommands.
 * The Start and Stop commands aren't implemented in the class, yet they are available in the actor interface.  Magic!
-* Errors are handled by the actor, the propagated to the callers.  It is important that actors listen to events, such as StateChanged on one another if an actor cares whether another one faults for instance, but all calls are fire-and-forget.  Any functions that cause an exception will result in the default value for the return type.
+* Errors are handled by the actor, not propagated to the callers.  If an observer needs to now if an actor faults, for instance, use WatchOther if in another actor, or  hooking the StateChanged event; all calls are fire-and-forget by default.  Any functions that cause an exception will result in the default value for the return type.
 * If a trigger is fired during a state transition (as often they are due to logic in "...Entered" events) the trigger doesn't fire until the transition completes.  This ensures that state events never appear to be out of order.
 
-I hope to add more examples, including how to use the state machine's Condition to automatically advance states.
+Here is an example snippet which shows how to implement WatchOtherAndUpdate, WatchOtherWhileInState, and conditions:
+
+    ...
+    NewState
+    (
+      MainsStates.GoingOnline, 
+      MainsStates.Initialized, 
+      new [] 
+      { 
+        NewTransition(MainsTriggers.Online, MainsStates.Online, OnlineWhen),
+      },
+      GoingOnlineEntered
+    ),
+    NewState
+    (
+      MainsStates.Online, 
+      MainsStates.Initialized, 
+      null,
+      OnlineEntered
+    ),
+    ...
+
+  private void GoingOnlineEntered(MainsStates oldState, StateMachine<MainsStates, MainsTriggers>.Transition transition)
+  {
+    Collection.Begin();
+    WatchOtherAndUpdate(Collection);
+
+    FrameUploader.Start();
+    WatchOtherAndUpdate(FrameUploader);
+  }
+
+  private bool OnlineWhen(MainsStates oldState, StateMachine<MainsStates, MainsTriggers>.Transition transition)
+  {
+    return Collection.InState(CollectionStates.Operating) && FrameUploader.InState(UploaderStates.Started);
+  }
+
+  private void OnlineEntered(MainsStates oldState, StateMachine<MainsStates, MainsTriggers>.Transition transition)
+  {
+    WatchOtherWhileInState(Collection, (s, t) => !Collection.InState(CollectionStates.Operating), () => { throw new FrameworkException("Collection stopped operating."); }, MainsStates.Online);
+    WatchOtherWhileInState(FrameUploader, (s, t) => !FrameUploader.InState(UploaderStates.Started), () => { throw new FrameworkException("FrameUploader went offline."); }, MainsStates.Online);
+  }
+
+This example shows part of an actor which is responsible for managing other actors.  It attempts to startup a couple other actors and watches for their states to change.  Any time their states change, UpdateStates() will by called by WatchOtherAndUpdate(), which will re-check the OnlineWhen condition.  Once that condition goes true, the Online trigger automatically fires per the configuration above.  Once online, WatchOtherWhileInState is used to monitor that the other actors remain in the expected states.  Note that InState is used rather than equals, because there are several sub-states of Operating and Started, and all this actor cares is that those actors remain in the said super-states.  Note that an exception is thrown rather than simply firing a trigger, such as Errored.  Typically the HandleError of any stateful actor is hooked to fire such an error trigger, but this way, the reason for the trigger firing will be apparent in the log.  
+
+Another thing to note is that the optional last argument is passed to WatchOtherWhileInState.  All "Watch" actor methods have such an optional argument to  specifies what state *this* actor must be in to continue monitoring the other actor.  This is because when the state transitions through a super-state, into a sub-state, the new state will be the sub-state so the watch will only be kept while in the sub-state.  When using Watch... methods within the entered transition of a super-state, you will almost always want to pass the super-state to the "whileIn" parameter so the watch persists for the duration of the super-state.  
+
