@@ -1,19 +1,17 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
 
 namespace Digithought.Framework
 {
-	public static class Logging
+    public static class Logging
 	{
-		public static event Action<Exception> LogError;
-		public static event Action<string, object> LogTrace;
-		public static Func<string, object, bool> TraceFilter;
+		public static event LogErrorHandler LogError;
+		public static event LogTraceHandler LogTrace;
+		public static LogTraceFilterHandler TraceFilter;
+		public static System.Text.RegularExpressions.Regex CategoryMask = null;
 
 		public static void Error(Exception e)
 		{
-			var handler = LogError;
+			var handler = LogError;	// Capture
 			if (handler != null)
 				handler(e);
 			else
@@ -27,19 +25,26 @@ namespace Digithought.Framework
 		public static void Trace(string category, object message)
 		{
 			// Filter as appropriate
-			var pass = true;
-			var filter = TraceFilter;
-			if (filter != null)
-				pass = filter(category, message);
-
-			if (pass)
+			var filter = TraceFilter;	// Capture
+			var mask = CategoryMask;	// Capture
+			if 
+			(
+				(filter == null || filter(category, message))
+					&& (mask == null || mask.IsMatch(category))
+			)
 			{
 				System.Diagnostics.Trace.WriteLine(DateTime.Now.ToString("o") + ": " + message);
 
-				var handler = LogTrace;
+				var handler = LogTrace;	// Capture
 				if (handler != null)
 					handler(category, message);
 			}
 		}
 	}
+
+	public delegate void LogErrorHandler(Exception e);
+
+	public delegate void LogTraceHandler(string category, object message);
+
+	public delegate bool LogTraceFilterHandler(string category, object message);
 }
