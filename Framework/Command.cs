@@ -1,6 +1,6 @@
 ﻿namespace Digithought.Framework
 {
-    public class Command<TState, TTrigger>
+	public class Command<TState, TTrigger>
 		where TState : struct
 		where TTrigger : struct
 	{

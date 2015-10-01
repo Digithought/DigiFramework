@@ -4,9 +4,9 @@ using System.Reflection;
 
 namespace Digithought.Framework
 {
-    /// <summary> Provides a base actor that manages its proxy and handles its own errors. </summary>
-    /// <typeparam name="TActor"> The specific actor interface being implemented. </typeparam>
-    public abstract class ActorBase<TActor>
+	/// <summary> Provides a base actor that manages its proxy and handles its own errors. </summary>
+	/// <typeparam name="TActor"> The specific actor interface being implemented. </typeparam>
+	public abstract class ActorBase<TActor>
 		where TActor : class
 	{
 		private readonly TActor _actor;
@@ -153,14 +153,14 @@ namespace Digithought.Framework
 			System.Threading.ThreadPool.QueueUserWorkItem(s => { System.Threading.Thread.Sleep(milliseconds); Act(callback); });
 		}
 
-        protected void Continue<T>(System.Threading.Tasks.Task<T> task, Action<T> action)
-        {
-            task.ContinueWith(t =>
-                {
-                    var result = t.Result;
-                    Act(() => action(result));
-                }
-            );
-        }
-    }
+		protected void Continue<T>(System.Threading.Tasks.Task<T> task, Action<T> action)
+		{
+			task.ContinueWith(t =>
+				{
+					var result = t.Result;
+					Act(() => action(result));
+				}
+			);
+		}
+	}
 }

@@ -3,7 +3,7 @@ using System.IO;
 
 namespace Digithought.Framework
 {
-    public static class Configurer
+	public static class Configurer
 	{
 		public static T Get<T>(T defaultConfig)
 		{

@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Digithought.Framework
 {
-    public class StateMachine<TState, TTrigger>
+	public class StateMachine<TState, TTrigger>
 		where TState : struct
 	{
 		public class StateInfo

@@ -3,7 +3,7 @@ using System.Runtime.Serialization;
 
 namespace Digithought.Framework
 {
-    [Serializable]
+	[Serializable]
 	public class FrameworkException : Exception, ISerializable
 	{
 		public FrameworkException(string message) : base(message)

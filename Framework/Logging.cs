@@ -2,7 +2,7 @@
 
 namespace Digithought.Framework
 {
-    public static class Logging
+	public static class Logging
 	{
 		public static event LogErrorHandler LogError;
 		public static event LogTraceHandler LogTrace;

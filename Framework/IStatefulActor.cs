@@ -1,6 +1,6 @@
 ﻿namespace Digithought.Framework
 {
-    public interface IStatefulActor<TState, TTrigger>
+	public interface IStatefulActor<TState, TTrigger>
 		where TState : struct
 	{
 		TState State { get; }

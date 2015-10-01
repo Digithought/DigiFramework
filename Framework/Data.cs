@@ -2,7 +2,7 @@
 
 namespace Digithought.Framework
 {
-    public static class Data
+	public static class Data
 	{
 		public static event LogDataHandler LogData;
 		public static LogDataFilterHandler LogFilter;

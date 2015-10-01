@@ -4,15 +4,15 @@ using System.Linq;
 
 namespace Digithought.Framework
 {
-    public static class LinqExtensions
-    {
-        /// <summary> Flattens a list of nested items. </summary>
-        public static IEnumerable<TResult> Expand<TSource, TResult>(this IEnumerable<TSource> items, Func<TSource, IEnumerable<TResult>> children)
-        {
-            foreach (var item in items)
-                foreach (var child in children(item))
-                    yield return child;
-        }
+	public static class LinqExtensions
+	{
+		/// <summary> Flattens a list of nested items. </summary>
+		public static IEnumerable<TResult> Expand<TSource, TResult>(this IEnumerable<TSource> items, Func<TSource, IEnumerable<TResult>> children)
+		{
+			foreach (var item in items)
+				foreach (var child in children(item))
+					yield return child;
+		}
 
 		/// <summary> Flattens a list of nested items. </summary>
 		public static IEnumerable<KeyValuePair<int, TResult>> ExpandWithIndex<TSource, TResult>(this IEnumerable<TSource> items, Func<TSource, IEnumerable<TResult>> children)
@@ -26,12 +26,12 @@ namespace Digithought.Framework
 			}
 		}
 
-        /// <summary> Removes the specified items by the given predicate. </summary>
-        public static void Remove<T>(this ICollection<T> items, Func<T, bool> predicate)
-        {
-            foreach (var toRemove in items.Where(predicate).ToList())
-                items.Remove(toRemove);
-        }
+		/// <summary> Removes the specified items by the given predicate. </summary>
+		public static void Remove<T>(this ICollection<T> items, Func<T, bool> predicate)
+		{
+			foreach (var toRemove in items.Where(predicate).ToList())
+				items.Remove(toRemove);
+		}
 
 		/// <summary> Returns the subset of items that are distinct by the given key returning function. </summary>
 		public static IEnumerable<TSource> DistinctBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> getKey)
