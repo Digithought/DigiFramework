@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace Digithought.Framework
 {
@@ -31,17 +32,20 @@ namespace Digithought.Framework
 			get { return _states.Transitioning; }
 		}
 
+		/// <summary> Is invoked any time a state transition occurs. </summary>
 		public event StateMachine<TState, TTrigger>.StateChangedHandler StateChanged
 		{
 			add { _states.StateChanged += value; }
 			remove { _states.StateChanged -= value; }
 		}
 
+		/// <summary> Tests to see if the current state is the given state, or some sub-state thereof. </summary>
 		public bool InState(TState state)
 		{
 			return _states.InState(state);
 		}
 
+		/// <summary> Fires the given trigger against the state machine, delayed if already transitioning. </summary>
 		protected void Fire(TTrigger trigger)
 		{
 			if (_states.Transitioning)
@@ -58,7 +62,7 @@ namespace Digithought.Framework
 
 		protected virtual void StateException(Exception e)
 		{
-			HandleException(e);
+			Logging.Error(e);
 		}
 
 		protected virtual void HandleStateChanged(TState oldState, StateMachine<TState, TTrigger>.Transition transition)
@@ -90,7 +94,7 @@ namespace Digithought.Framework
 			return new Command<TState, TTrigger>(validInStates, trigger);
 		}
 
-		public override object Invoke(MethodInfo method, params object[] parameters)
+		protected override void InnerInvoke(Action defaultInvocation, MethodInfo method, params object[] parameters)
 		{
 			Command<TState, TTrigger> command;
 			var commandFound = _commands.TryGetValue(method.Name, out command);
@@ -101,15 +105,13 @@ namespace Digithought.Framework
 					#if (TRACE_ACTS)
 					Logging.Trace(FrameworkLoggingCategory.Acts, "Call to " + GetType().Name + "[" + GetHashCode() + "]." + method.Name + " - triggering command: " + command.Trigger.Value);
 					#endif
-					Act(() => Fire(command.Trigger.Value));	// Must queue this call otherwise this could lead to out of order invocation
+					Fire(command.Trigger.Value);
 				}
 				else
-					return base.Invoke(method, parameters);
+					defaultInvocation();
 			}
 			else
-				Worker.Queue(() => HandleException(new FrameworkException(String.Format("Invalid command '{0}' against {1} [{2}] when in state {3}.", method.Name, GetType().Name, GetHashCode(), State))));
-
-			return GetDefaultReturnValue(method);
+				StateException(new FrameworkException(String.Format("Invalid command '{0}' against {1} [{2}] when in state {3}.", method.Name, GetType().Name, GetHashCode(), State)));
 		}
 
 		protected abstract StateMachine<TState, TTrigger> InitializeStates();
@@ -146,6 +148,8 @@ namespace Digithought.Framework
 			}
 		}
 
+		/// <summary> Repeatedly invokes the a callback while in the current state 
+		/// (or optionally given super-state). </summary>
 		protected void RefreshWhileInState(int milliseconds, Action<float> callback, TState? whileIn = null)
 		{
 			var inState = whileIn ?? State;
@@ -182,7 +186,10 @@ namespace Digithought.Framework
 			);
 		}
 
-		protected void TimeoutWhileInState(int milliseconds, Action callback, TState? whileIn = null)
+		/// <summary> Calls back after a given interval if still in the current state 
+		/// (or optionally given super-state). </summary>
+		/// <remarks> If the callback is omitted, a timeout exception is thrown. </remarks>
+		protected void TimeoutWhileInState(int milliseconds, Action callback = null, TState? whileIn = null)
 		{
 			var inState = whileIn ?? State;
 			System.Threading.Timer timer = null;
@@ -194,7 +201,12 @@ namespace Digithought.Framework
 						Framework.Logging.Trace("Timer", GetType().Name + ": Timeout triggered.");
 						#endif
 						if (InState(inState))
-							callback();
+						{
+							if (callback != null)
+								callback();
+							else
+								throw new FrameworkTimeout(GetType().Name + ": Timeout in state " + inState);
+						}
 						timer.Dispose();
 					}),
 					null,
@@ -214,6 +226,9 @@ namespace Digithought.Framework
 			);
 		}
 
+		/// <summary> Checks a given condition whenever the given other actor changes state; if 
+		/// the condition passes, a given action is invoked, but all of this only while in the 
+		/// current state (or given super-state). </summary>
 		protected void WatchOtherWhileInState<OS, OT>(IStatefulActor<OS, OT> other, WatchOtherCondition<OS, OT> condition, Action action, TState? whileIn = null)
 			where OS : struct
 		{
@@ -237,11 +252,47 @@ namespace Digithought.Framework
 			}
 		}
 
+		/// <summary> Checks to see if the current states transition's conditions are satisfied 
+		/// in response to any state change in the given other actor, but only while in the 
+		/// current state (or optionally given super-state). </summary>
 		protected void WatchOtherAndUpdate<OS, OT>(IStatefulActor<OS, OT> other, TState? whileIn = null)
 			where OS : struct
 		{
 			WatchOtherWhileInState(other, (s, t) => true, UpdateStates, whileIn);
 		}
+
+		/// <summary> Checks to see if the current states transition's conditions are satisfied 
+		/// in response to any state change in the given other actor, but only while in the 
+		/// current state (or optionally given super-state).  If the other actor goes to a given
+		/// fault state, a fault exception is thrown for this actor. </summary>
+		protected void WatchOtherAndUpdate<OS, OT>(IStatefulActor<OS, OT> other, OS faultState, TState? whileIn = null)
+			where OS : struct
+		{
+			WatchOtherWhileInState
+			(
+				other, 
+				(s, t) => true, 
+				() =>
+				{
+					if (other.InState(faultState))
+						throw new FrameworkFault(other.GetType().Name + " unexpectedly went to state " + faultState);
+					else
+						UpdateStates();
+                }, 
+				whileIn
+			);
+		}
+
+		/// <summary> Continues with a given delegate once the given task completes, but only 
+		/// if still in the current state (or optionally given super-state). </summary>
+		protected void ContinueWhileInState<T>(Task<T> task, Action<T> with, TState? whileIn = null)
+		{
+			var inState = whileIn ?? State;
+			var leftState = false;
+			WatchState(inState, () => { leftState = true; });
+			if (InState(inState))
+				Continue(task, v => { if (!leftState && InState(inState)) with(v); });
+        }
 	}
 
 	public delegate bool WatchOtherCondition<OS, OT>(OS newState, StateMachine<OS, OT>.Transition transition)
