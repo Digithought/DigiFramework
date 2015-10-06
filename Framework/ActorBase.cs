@@ -37,7 +37,7 @@ namespace Digithought.Framework
 		/// actor's thread.  Another use case is to invoke something after the current logical step completes.
 		public void Act(Action action)
 		{
-			_worker.Queue(() => InnerInvoke(action));
+			_worker.Queue(() => InvokeHandlingErrors(action));
 		}
 
 		/// <summary> Allows an implementation to override the handling of a fault. </summary>
@@ -83,7 +83,7 @@ namespace Digithought.Framework
 			}
 		}
 
-		protected virtual void InnerInvoke(Action call)
+		protected virtual void InvokeHandlingErrors(Action call)
 		{
 			try
 			{
@@ -115,14 +115,14 @@ namespace Digithought.Framework
 			#if (TRACE_ACTS)
 			// REPLACED FOR PERFORMANCE: Newtonsoft.Json.JsonConvert.SerializeObject(parameters));
 			// Use this rather than ToString() if more detailed parameter logging is needed
-			Logging.Trace(FrameworkLoggingCategory.Acts, "Call to " + GetType().Name + "[" + GetHashCode() + "]." + method.Name + " " + String.Join(",", parameters)); 
+			Logging.Trace(FrameworkLoggingCategory.Acts, "Call to " + GetType().Name + "[" + GetHashCode() + "]." + method.Name + "(" + String.Join(",", parameters) + ")"); 
 			#endif
 
 			if (method.ReturnType == typeof(void))
 			{
 				_worker.Queue
 				(
-					() => InnerInvoke(() => UnravelTargetException(() => method.Invoke(this, parameters)))
+					() => InvokeHandlingErrors(() => UnravelTargetException(() => InnerInvoke(() => method.Invoke(this, parameters), method, parameters)))
 				);
 
 				return null;
@@ -132,12 +132,18 @@ namespace Digithought.Framework
 				object result = GetDefaultReturnValue(method);
 				_worker.Execute
 				(
-					() => InnerInvoke(() => UnravelTargetException(() => { result = method.Invoke(this, parameters); }))
+					() => InvokeHandlingErrors(() => UnravelTargetException(() => InnerInvoke(() => { result = method.Invoke(this, parameters); }, method, parameters)))
 				);
 
 				return result;
 			}
 
+		}
+
+		/// <summary> This performs the actual invocation, already within the actor thread.  Use this for conditional execution or other cross-cutting operations that might access actor state. </summary>
+		protected virtual void InnerInvoke(Action defaultInvocation, MethodInfo method, params object[] parameters)
+		{
+			defaultInvocation();
 		}
 
 		protected static object GetDefaultReturnValue(MethodInfo method)
@@ -157,8 +163,16 @@ namespace Digithought.Framework
 		{
 			task.ContinueWith(t =>
 				{
-					var result = t.Result;
-					Act(() => action(result));
+					try
+					{
+						var result = t.Result;
+						Act(() => action(result));
+					}
+					catch (Exception e)
+					{
+						Logging.Error(e);
+						Act(() => { throw e; });
+					}
 				}
 			);
 		}
