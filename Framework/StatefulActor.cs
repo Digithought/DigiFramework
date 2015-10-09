@@ -15,7 +15,7 @@ namespace Digithought.Framework
 			: base(worker, priority)
 		{
 			_states = InitializeStates();
-			_states.HandleError = StateException;
+			_states.UnhandledError = HandleException;
 			_states.StateChanged += HandleStateChanged;
 			_commands = InitializeCommands().ToDictionary(e => e.Key, e => e.Value);
 		}
@@ -264,8 +264,8 @@ namespace Digithought.Framework
 		/// <summary> Checks to see if the current states transition's conditions are satisfied 
 		/// in response to any state change in the given other actor, but only while in the 
 		/// current state (or optionally given super-state).  If the other actor goes to a given
-		/// fault state, a fault exception is thrown for this actor. </summary>
-		protected void WatchOtherAndUpdate<OS, OT>(IStatefulActor<OS, OT> other, OS faultState, TState? whileIn = null)
+		/// fault state, an exception is thrown for this actor. </summary>
+		protected void WatchOtherAndUpdate<OS, OT>(IStatefulActor<OS, OT> other, OS errorState, TState? whileIn = null)
 			where OS : struct
 		{
 			WatchOtherWhileInState
@@ -274,8 +274,8 @@ namespace Digithought.Framework
 				(s, t) => true, 
 				() =>
 				{
-					if (other.InState(faultState))
-						throw new FrameworkFault(other.GetType().Name + " unexpectedly went to state " + faultState);
+					if (other.InState(errorState))
+						throw new FrameworkException(other.GetType().Name + " unexpectedly went to state " + errorState);
 					else
 						UpdateStates();
                 }, 

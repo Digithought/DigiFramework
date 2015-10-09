@@ -44,7 +44,7 @@ namespace Digithought.Framework
 		public IDictionary<TState, StateInfo> States { get; private set; }
 		public TState State { get; private set; }
 		public bool Transitioning { get; private set; }
-		public Action<Exception> HandleError { get; set; }
+		public Action<Exception> UnhandledError { get; set; }
 		public event StateChangedHandler StateChanged;
 
 		public StateMachine(IEnumerable<StateInfo> states, TState initial = default(TState))
@@ -172,8 +172,8 @@ namespace Digithought.Framework
 
 		private void DoHandleError(Exception e)
 		{
-			if (HandleError != null)
-				HandleError(e);
+			if (UnhandledError != null)
+				UnhandledError(e);
 		}
 
 		private void DoTransitionEvents(StateInfo source, StateInfo target, Action<StateInfo> each)
