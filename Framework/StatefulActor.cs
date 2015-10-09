@@ -275,7 +275,7 @@ namespace Digithought.Framework
 				() =>
 				{
 					if (other.InState(errorState))
-						throw new FrameworkException(other.GetType().Name + " unexpectedly went to state " + errorState);
+						throw new FrameworkWatchedStateException(other.GetType().Name + " unexpectedly went to state " + errorState, other);
 					else
 						UpdateStates();
                 }, 

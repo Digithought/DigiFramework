@@ -51,6 +51,7 @@
     <Compile Include="FrameworkException.cs" />
     <Compile Include="FrameworkFault.cs" />
     <Compile Include="FrameworkLoggingCategory.cs" />
+    <Compile Include="FrameworkWatchedStateException.cs" />
     <Compile Include="FrameworkTimeout.cs" />
     <Compile Include="IDriver.cs" />
     <Compile Include="IStatefulActor.cs" />
