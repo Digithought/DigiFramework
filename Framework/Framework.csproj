@@ -53,6 +53,7 @@
     <Compile Include="FrameworkLoggingCategory.cs" />
     <Compile Include="FrameworkWatchedStateException.cs" />
     <Compile Include="FrameworkTimeout.cs" />
+    <Compile Include="IActor.cs" />
     <Compile Include="IDriver.cs" />
     <Compile Include="IStatefulActor.cs" />
     <Compile Include="LinqExtensions.cs" />

@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace Digithought.Framework
 {
-	public abstract class StatefulActor<TActor, TState, TTrigger> : ActorBase<TActor>, IStatefulActor<TState, TTrigger>
-		where TActor : class
+	public abstract class StatefulActor<TActor, TState, TTrigger> : ActorBase<TActor>, IStatefulActor<TActor, TState, TTrigger>
+		where TActor : IActor<TActor>
 		where TState : struct
 		where TTrigger : struct
 	{
@@ -16,6 +16,7 @@ namespace Digithought.Framework
 		{
 			_states = InitializeStates();
 			_states.UnhandledError = HandleException;
+			_states.UnhandledTrigger = HandleFailedTrigger;
 			_states.StateChanged += HandleStateChanged;
 			_commands = InitializeCommands().ToDictionary(e => e.Key, e => e.Value);
 		}
@@ -63,6 +64,11 @@ namespace Digithought.Framework
 		protected virtual void StateException(Exception e)
 		{
 			Logging.Error(e);
+		}
+
+		protected virtual void HandleFailedTrigger(TTrigger trigger)
+		{
+			Logging.Trace(FrameworkLoggingCategory.States, GetType().Name + "[" + GetHashCode() + "]: WARNING: Trigger " + trigger + " fired and has no transitions.");
 		}
 
 		protected virtual void HandleStateChanged(TState oldState, StateMachine<TState, TTrigger>.Transition transition)
@@ -229,7 +235,7 @@ namespace Digithought.Framework
 		/// <summary> Checks a given condition whenever the given other actor changes state; if 
 		/// the condition passes, a given action is invoked, but all of this only while in the 
 		/// current state (or given super-state). </summary>
-		protected void WatchOtherWhileInState<OS, OT>(IStatefulActor<OS, OT> other, WatchOtherCondition<OS, OT> condition, Action action, TState? whileIn = null)
+		protected void WatchOtherWhileInState<OA, OS, OT>(IStatefulActor<OA, OS, OT> other, WatchOtherCondition<OS, OT> condition, Action action, TState? whileIn = null)
 			where OS : struct
 		{
 			var inState = whileIn ?? State;
@@ -255,7 +261,7 @@ namespace Digithought.Framework
 		/// <summary> Checks to see if the current states transition's conditions are satisfied 
 		/// in response to any state change in the given other actor, but only while in the 
 		/// current state (or optionally given super-state). </summary>
-		protected void WatchOtherAndUpdate<OS, OT>(IStatefulActor<OS, OT> other, TState? whileIn = null)
+		protected void WatchOtherAndUpdate<OA, OS, OT>(IStatefulActor<OA, OS, OT> other, TState? whileIn = null)
 			where OS : struct
 		{
 			WatchOtherWhileInState(other, (s, t) => true, UpdateStates, whileIn);
@@ -265,7 +271,7 @@ namespace Digithought.Framework
 		/// in response to any state change in the given other actor, but only while in the 
 		/// current state (or optionally given super-state).  If the other actor goes to a given
 		/// fault state, an exception is thrown for this actor. </summary>
-		protected void WatchOtherAndUpdate<OS, OT>(IStatefulActor<OS, OT> other, OS errorState, TState? whileIn = null)
+		protected void WatchOtherAndUpdate<OA, OS, OT>(IStatefulActor<OA, OS, OT> other, OS errorState, TState? whileIn = null)
 			where OS : struct
 		{
 			WatchOtherWhileInState
@@ -278,7 +284,7 @@ namespace Digithought.Framework
 						throw new FrameworkWatchedStateException(other.GetType().Name + " unexpectedly went to state " + errorState, other);
 					else
 						UpdateStates();
-                }, 
+				}, 
 				whileIn
 			);
 		}
@@ -292,7 +298,18 @@ namespace Digithought.Framework
 			WatchState(inState, () => { leftState = true; });
 			if (InState(inState))
 				Continue(task, v => { if (!leftState && InState(inState)) with(v); });
-        }
+		}
+
+		/// <summary> Continues with a given delegate once the given task completes, but only 
+		/// if still in the current state (or optionally given super-state). </summary>
+		protected void ContinueWhileInState(Task task, Action with, TState? whileIn = null)
+		{
+			var inState = whileIn ?? State;
+			var leftState = false;
+			WatchState(inState, () => { leftState = true; });
+			if (InState(inState))
+				Continue(task, () => { if (!leftState && InState(inState)) with(); });
+		}
 	}
 
 	public delegate bool WatchOtherCondition<OS, OT>(OS newState, StateMachine<OS, OT>.Transition transition)

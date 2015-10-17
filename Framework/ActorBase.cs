@@ -6,8 +6,8 @@ namespace Digithought.Framework
 {
 	/// <summary> Provides a base actor that manages its proxy and handles its own errors. </summary>
 	/// <typeparam name="TActor"> The specific actor interface being implemented. </typeparam>
-	public abstract class ActorBase<TActor>
-		where TActor : class
+	public abstract class ActorBase<TActor> : IActor<TActor>
+		where TActor : IActor<TActor>
 	{
 		private readonly TActor _actor;
 		private readonly WorkerQueue _worker;
@@ -38,6 +38,11 @@ namespace Digithought.Framework
 		public void Act(Action action)
 		{
 			_worker.Queue(() => InvokeHandlingErrors(action));
+		}
+
+		public void Atomically(Action<TActor> action)
+		{
+			Act(() => action(Actor));
 		}
 
 		/// <summary> Allows an implementation to override the handling of a fault. </summary>
@@ -76,10 +81,10 @@ namespace Digithought.Framework
 			{
 				// Don't let secondary problem in error handling propagate
 				Trace.WriteLine("Error handling exception: " + secondary.Message);
-#if (DEBUG)
+				#if (DEBUG)
 				// Error handling should not be throwing exceptions... fix the problem
 				Debugger.Break();
-#endif
+				#endif
 			}
 		}
 
@@ -115,29 +120,31 @@ namespace Digithought.Framework
 			#if (TRACE_ACTS)
 			// REPLACED FOR PERFORMANCE: Newtonsoft.Json.JsonConvert.SerializeObject(parameters));
 			// Use this rather than ToString() if more detailed parameter logging is needed
-			Logging.Trace(FrameworkLoggingCategory.Acts, "Call to " + GetType().Name + "[" + GetHashCode() + "]." + method.Name + "(" + String.Join(",", parameters) + ")"); 
+			Logging.Trace(FrameworkLoggingCategory.Acts, "Call to " + GetType().Name + "[" + GetHashCode() + "]." + method.Name + "(" + String.Join(",", parameters) + ")");
 			#endif
 
-			if (method.ReturnType == typeof(void))
-			{
-				_worker.Queue
-				(
-					() => InvokeHandlingErrors(() => UnravelTargetException(() => InnerInvoke(() => method.Invoke(this, parameters), method, parameters)))
-				);
-
-				return null;
-			}
+			object result = null;
+			Action work;
+			var voidReturn = method.ReturnType == typeof(void);
+			if (voidReturn)
+				work = () => InvokeHandlingErrors(() => UnravelTargetException(() => InnerInvoke(() => method.Invoke(this, parameters), method, parameters)));
 			else
 			{
-				object result = GetDefaultReturnValue(method);
-				_worker.Execute
-				(
-					() => InvokeHandlingErrors(() => UnravelTargetException(() => InnerInvoke(() => { result = method.Invoke(this, parameters); }, method, parameters)))
-				);
-
-				return result;
+				result = GetDefaultReturnValue(method);
+				work = () => InvokeHandlingErrors(() => UnravelTargetException(() => InnerInvoke(() => { result = method.Invoke(this, parameters); }, method, parameters)));
+			}
+			// Perform synchronously or asynchronously depending on whether the current thread is the actor's
+			if (_worker.CurrentThreadOn())
+				work();
+			else
+			{
+				if (voidReturn)
+					_worker.Queue(work);
+				else
+					_worker.Execute(work);
 			}
 
+			return result;
 		}
 
 		/// <summary> This performs the actual invocation, already within the actor thread.  Use this for conditional execution or other cross-cutting operations that might access actor state. </summary>
@@ -174,6 +181,23 @@ namespace Digithought.Framework
 						Act(() => { throw e; });
 					}
 				}
+			);
+		}
+
+		protected void Continue(System.Threading.Tasks.Task task, Action action)
+		{
+			task.ContinueWith(t =>
+			{
+				try
+				{
+					Act(() => action());
+				}
+				catch (Exception e)
+				{
+					Logging.Error(e);
+					Act(() => { throw e; });
+				}
+			}
 			);
 		}
 	}

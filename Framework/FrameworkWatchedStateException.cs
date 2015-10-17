@@ -7,17 +7,17 @@ namespace Digithought.Framework
 	public class FrameworkWatchedStateException : FrameworkException
 	{
 		public object Other { get; private set; }
-        
-        public FrameworkWatchedStateException(string message) : base(message)
+		
+		public FrameworkWatchedStateException(string message) : base(message)
 		{
 		}
 
-        public FrameworkWatchedStateException(string message, object other) : this(message)
-        {
-            Other = other;
-        }
+		public FrameworkWatchedStateException(string message, object other) : this(message)
+		{
+			Other = other;
+		}
 
-        protected FrameworkWatchedStateException(SerializationInfo info, StreamingContext context) : base(info, context)
+		protected FrameworkWatchedStateException(SerializationInfo info, StreamingContext context) : base(info, context)
 		{
 		}
 	}
