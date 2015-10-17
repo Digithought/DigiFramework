@@ -7,6 +7,7 @@ namespace Digithought.Framework
 	public static class LinqExtensions
 	{
 		/// <summary> Flattens a list of nested items. </summary>
+        [Obsolete("There is an equivalent method in the standard library: Enumerable.SelectMany")]
 		public static IEnumerable<TResult> Expand<TSource, TResult>(this IEnumerable<TSource> items, Func<TSource, IEnumerable<TResult>> children)
 		{
 			foreach (var item in items)
@@ -63,5 +64,16 @@ namespace Digithought.Framework
 				++i;
 			}
 		}
+
+        public static IEnumerable<TElement> Sequence<TElement>(TElement first, Func<TElement, TElement> getNext)
+            where TElement : class
+        {
+            var current = first;
+            while (current != null)
+            {
+                yield return current;
+                current = getNext(current);
+            }
+        }
 	}
 }
