@@ -29,6 +29,14 @@ namespace Digithought.Framework
 			_priority = priority;
 		}
 
+		/// <summary> Returns true if the current thread is on this worker. </summary>
+		public bool CurrentThreadOn()
+		{
+			lock (_asyncQueue)
+				return _asyncThread != null && _asyncThread.ManagedThreadId == System.Threading.Thread.CurrentThread.ManagedThreadId;
+		}
+
+		/// <summary> Invokes an action to be performed on the worker.  The work is guaranteed not be be done synchronously with this call. </summary>
 		public void Queue(System.Action action)
 		{
 			if (action != null)
@@ -47,6 +55,7 @@ namespace Digithought.Framework
 			}
 		}
 
+		/// <summary> Invokes an action on the worker and blocks the current thread until the action completes. </summary>
 		public void Execute(System.Action action)
 		{
 			var waitFor = new ManualResetEvent(false);
