@@ -28,7 +28,7 @@ namespace Digithought.Framework
 							Error = (o, e) => { errorLoading = true; }, 
 							ObjectCreationHandling = Newtonsoft.Json.ObjectCreationHandling.Reuse 
 						};
-                    Newtonsoft.Json.JsonConvert.PopulateObject(config, copy, jsonSettings);
+					Newtonsoft.Json.JsonConvert.PopulateObject(config, copy, jsonSettings);
 					if (errorLoading)
 						try
 						{
@@ -72,7 +72,9 @@ namespace Digithought.Framework
 				)
 			)
 			{
-				InternalApply(member, config, member is FieldInfo ? ((FieldInfo)member).GetValue(config) : ((PropertyInfo)member).GetValue(config));
+				var value = member is FieldInfo ? ((FieldInfo)member).GetValue(config) : ((PropertyInfo)member).GetValue(config);
+				if (value != null && typeof(IComparable).IsAssignableFrom(value.GetType()))
+					InternalApply(member, config, value);
 			}
 		}
 
@@ -97,9 +99,13 @@ namespace Digithought.Framework
 				)
 				{
 					var value = member is FieldInfo ? ((FieldInfo)member).GetValue(config) : ((PropertyInfo)member).GetValue(config);
-					if (toApply != member && member.Name == toApply.Name && member.MemberType == toApply.MemberType)
+					var type = member is FieldInfo ? ((FieldInfo)member).FieldType : ((PropertyInfo)member).PropertyType;
+					if (toApply != member && member.Name == toApply.Name && type.IsAssignableFrom(applyValue.GetType()) 
+						&& typeof(IComparable).IsAssignableFrom(type)
+					)
 					{
-						if (value == null)
+						// Set the value of the member if it isn't the default value for its type
+						if (value == null || ((IComparable)value).CompareTo(type.IsValueType ? Activator.CreateInstance(type) : (object)null) == 0)
 						{
 							if (member is FieldInfo)
 								((FieldInfo)member).SetValue(config, applyValue);
