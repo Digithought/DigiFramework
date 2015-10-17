@@ -45,6 +45,7 @@ namespace Digithought.Framework
 		public TState State { get; private set; }
 		public bool Transitioning { get; private set; }
 		public Action<Exception> UnhandledError { get; set; }
+		public Action<TTrigger> UnhandledTrigger { get; set; }
 		public event StateChangedHandler StateChanged;
 
 		public StateMachine(IEnumerable<StateInfo> states, TState initial = default(TState))
@@ -83,18 +84,6 @@ namespace Digithought.Framework
 			return false;
 		}
 
-		private void InternalTransition(StateInfo oldState, Transition transition)
-		{
-			var newState = GetState(transition.Target);
-			DoTransitionEvents(oldState, newState, s => { if (s.Exited != null) s.Exited(oldState.State, transition); });
-			if (transition.SetupState != null)
-				transition.SetupState(transition.Target);
-			State = transition.Target;
-			DoTransitionEvents(newState, oldState, s => { if (s.Entered != null) s.Entered(oldState.State, transition); });
-			if (StateChanged != null)
-				StateChanged(oldState.State, transition);
-		}
-
 		public bool InState(TState state)
 		{
 			return StateIn(State, state);
@@ -131,8 +120,8 @@ namespace Digithought.Framework
 						else 
 						{
 							state = state.Parent == null ? null : GetState(state.Parent.Value);
-							if (state == null)
-								Logging.Trace(FrameworkLoggingCategory.States, "WARNING: Trigger " + trigger + " fired and has no transitions.");
+							if (state == null && UnhandledTrigger != null)
+								UnhandledTrigger(trigger);
 						}
 					}
 				}
@@ -176,33 +165,50 @@ namespace Digithought.Framework
 				UnhandledError(e);
 		}
 
-		private void DoTransitionEvents(StateInfo source, StateInfo target, Action<StateInfo> each)
+        private void InternalTransition(StateInfo oldState, Transition transition)
+        {
+            var newState = GetState(transition.Target);
+
+            // Raise Exit events for each departing state
+            foreach (var a in FindPathFromCommon(oldState, newState))
+                if (a.Exited != null) 
+                    WrapCallback(() => a.Exited(oldState.State, transition));
+
+            // Raise SetupState
+            if (transition.SetupState != null)
+                transition.SetupState(transition.Target);
+
+            State = transition.Target;
+            
+            // Raise Entered events for each arriving state
+            foreach (var a in FindPathFromCommon(newState, oldState).Reverse())
+                if (a.Entered != null)
+                    WrapCallback(() => a.Entered(oldState.State, transition));
+
+            // Raise StateChanged
+            if (StateChanged != null)
+                StateChanged(oldState.State, transition);
+        }
+
+        private void DoTransitionEvents(StateInfo source, StateInfo target, Action<StateInfo> each, bool entering)
 		{
-			var ancestors = FindPathFromCommon(source, target);
-			if (ancestors != null)
-			{
-				foreach (var a in ancestors)
-					WrapCallback(() => each(a));
-			}
-			else 
-				WrapCallback(() => each(source));
 		}
 
+        /// <summary> Returns the non-overlapping lineage relative to source. </summary>
 		private IEnumerable<StateInfo> FindPathFromCommon(StateInfo source, StateInfo target)
 		{
-			var current = target;
-			while (current.Parent != null && !source.State.Equals(current.State))
-				current = GetState(current.Parent.Value);
-			if (!source.State.Equals(current.State) && source.Parent != null)
-			{
-				var ancestors = FindPathFromCommon(GetState(source.Parent.Value), target);
-				if (ancestors != null)
-					return new[] { source }.Concat(ancestors);
-
-			}
-			else if (source.State.Equals(current.State))
-				return new StateInfo[0];
-			return null;
+            var sourceLineage = LinqExtensions.Sequence(source, i => i.Parent != null ? GetState(i.Parent.Value) : null).ToList();
+            var unmatchedCount = sourceLineage.Count;
+            foreach (var targetItem in LinqExtensions.Sequence(target, i => i.Parent != null ? GetState(i.Parent.Value) : null))
+            {
+                var index = sourceLineage.IndexOf(targetItem);
+                if (index >= 0)
+                {
+                    unmatchedCount = index;
+                    break;
+                }
+            }
+            return sourceLineage.Take(unmatchedCount);
 		}
 
 		private StateInfo GetState(TState state)
