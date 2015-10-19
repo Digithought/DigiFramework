@@ -65,17 +65,19 @@ namespace Digithought.Framework
 		{
 			try
 			{
-				Logging.Error(e);
-
-				if (e is FrameworkFault)
-					HandleFault(e);
-				else if (e is FrameworkTimeout)
-					HandleTimeout(e);
-				else
-					HandleError(e);
-
-				if (ErrorOccurred != null)
-					ErrorOccurred(e);
+                try
+                {
+                    NotifyOfError(e);
+                }
+                finally
+                {
+                    if (e is FrameworkFault)
+                        HandleFault(e);
+                    else if (e is FrameworkTimeout)
+                        HandleTimeout(e);
+                    else
+                        HandleError(e);
+                }
 			}
 			catch (Exception secondary)
 			{
@@ -88,7 +90,14 @@ namespace Digithought.Framework
 			}
 		}
 
-		protected virtual void InvokeHandlingErrors(Action call)
+        protected virtual void NotifyOfError(Exception e)
+        {
+            Logging.Error(e);
+            if (ErrorOccurred != null)
+                ErrorOccurred(e);
+        }
+
+        protected virtual void InvokeHandlingErrors(Action call)
 		{
 			try
 			{
@@ -177,7 +186,6 @@ namespace Digithought.Framework
 					}
 					catch (Exception e)
 					{
-						Logging.Error(e);
 						Act(() => { throw e; });
 					}
 				}
@@ -194,7 +202,6 @@ namespace Digithought.Framework
 				}
 				catch (Exception e)
 				{
-					Logging.Error(e);
 					Act(() => { throw e; });
 				}
 			}
