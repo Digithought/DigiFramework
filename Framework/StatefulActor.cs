@@ -33,7 +33,7 @@ namespace Digithought.Framework
 			get { return _states.Transitioning; }
 		}
 
-		/// <summary> Is invoked any time a state transition occurs. </summary>
+		/// <summary> Is invoked whenever a state transition occurs. </summary>
 		public event StateMachine<TState, TTrigger>.StateChangedHandler StateChanged
 		{
 			add { _states.StateChanged += value; }
