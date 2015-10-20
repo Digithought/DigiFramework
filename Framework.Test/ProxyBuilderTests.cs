@@ -2,11 +2,11 @@
 using System.Reflection;
 using Moq;
 using Digithought.Framework;
-using NUnit.Framework;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace WeedebudNet.Tests
 {
-	[TestFixture]
+	[TestClass]
 	public class ProxyBuilderTests
 	{
 		object o1 = new Object();
@@ -25,7 +25,7 @@ namespace WeedebudNet.Tests
 			object Invoke(MethodInfo method, params object[] parameters);
 		}
 
-		[Test]
+		[TestMethod]
 		public void MethodInvocationTest()
 		{
 			var mockInvoker = new Mock<IInvoker>();
@@ -52,7 +52,7 @@ namespace WeedebudNet.Tests
 			object Reference { get; set; }
 		}
 
-		[Test]
+		[TestMethod]
 		public void PropertyEvaluationTest()
 		{
 			var mockInvoker = new Mock<IInvoker>();
@@ -97,7 +97,7 @@ namespace WeedebudNet.Tests
 			throw new NotImplementedException();
 		}
 
-		[Test]
+		[TestMethod]
 		public void EventEvaluationTest()
 		{
 			var mockInvoker = new Mock<IInvoker>();
@@ -137,7 +137,7 @@ namespace WeedebudNet.Tests
 			//TB DerivedMethod<TB>(TB arg1);
 		}
 
-		[Test]
+		[TestMethod]
 		public void GenericMethodInvocationTest()
 		{
 			var mockInvoker = new Mock<IInvoker>();
@@ -166,7 +166,7 @@ namespace WeedebudNet.Tests
 			T ReturnEnum(T arg1);
 		}
 
-		[Test]
+		[TestMethod]
 		public void EnumMethodInvocationTest()
 		{
 			var mockInvoker = new Mock<IInvoker>();

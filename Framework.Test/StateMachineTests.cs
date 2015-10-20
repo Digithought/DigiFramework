@@ -8,13 +8,13 @@ using System.Threading.Tasks;
 
 namespace Digithought.Framework.Tests
 {
-    [TestClass()]
+    [TestClass]
     public class StateMachineTests
     {
         private enum TestState { A, AA, AB, B, BA };
         private enum TestTrigger { AAtoAB, ABtoBA };
 
-        [TestMethod()]
+        [TestMethod]
         public void TransitionEventsTest()
         {
             var bEnteredTriggered = false;
@@ -98,7 +98,7 @@ namespace Digithought.Framework.Tests
                 Assert.Fail("Incorrect state change.");
         }
 
-        [TestMethod()]
+        [TestMethod]
         public void StateInTest()
         {
             var machine = new StateMachine<TestState, TestTrigger>(
