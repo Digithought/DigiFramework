@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 
 namespace Digithought.Framework
@@ -129,7 +130,7 @@ namespace Digithought.Framework
 			#if (TRACE_ACTS)
 			// REPLACED FOR PERFORMANCE: Newtonsoft.Json.JsonConvert.SerializeObject(parameters));
 			// Use this rather than ToString() if more detailed parameter logging is needed
-			Logging.Trace(FrameworkLoggingCategory.Acts, "Call to " + GetType().Name + "[" + GetHashCode() + "]." + method.Name + "(" + String.Join(",", parameters) + ")");
+			Logging.Trace(FrameworkLoggingCategory.Acts, "Call to " + GetType().Name + "[" + GetHashCode() + "]." + method.Name + "(" + String.Join(",", parameters.Select(x => x ?? "")) + ")");
 			#endif
 
 			object result = null;
