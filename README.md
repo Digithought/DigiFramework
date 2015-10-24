@@ -1,3 +1,4 @@
+[![Build status](https://ci.appveyor.com/api/projects/status/14nejab9m5ujil8v?svg=true)](https://ci.appveyor.com/project/n8allan/digiframework)
 DigiFramework
 =============
 
