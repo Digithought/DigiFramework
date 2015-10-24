@@ -181,3 +181,4 @@ UpgradeLog*.htm
 
 # Microsoft Fakes
 FakesAssemblies/
+/Backup_of_DigiFramework Icon.cdr
