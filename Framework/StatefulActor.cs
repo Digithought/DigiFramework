@@ -139,19 +139,28 @@ namespace Digithought.Framework
 
 		private Dictionary<TState, List<Action>> _watchers = new Dictionary<TState, List<Action>>();
 
-		/// <summary> Calls back when actor leaves state (immediately if not in given state). </summary>
+		/// <summary> Calls back when actor leaves the given state (immediately if not in given state). </summary>
 		public void WatchState(TState state, Action callback)
 		{
 			if (!InState(state))
 				callback();
 			else
-			{
-				List<Action> bucket;
-				if (_watchers.TryGetValue(state, out bucket))
-					bucket.Add(callback);
-				else
-					_watchers.Add(state, new List<Action> { callback });
-			}
+				InternalWatchState(state, callback);
+		}
+
+		/// <summary> Calls back when actor leaves the current state. </summary>
+		public void WatchState(Action callback)
+		{
+			InternalWatchState(State, callback);
+		}
+
+		private void InternalWatchState(TState state, Action callback)
+		{
+			List<Action> bucket;
+			if (_watchers.TryGetValue(state, out bucket))
+				bucket.Add(callback);
+			else
+				_watchers.Add(state, new List<Action> { callback });
 		}
 
 		/// <summary> Repeatedly invokes the a callback while in the current state 
@@ -203,17 +212,23 @@ namespace Digithought.Framework
 				(
 					s => Act(() =>
 					{
-						#if (TRACE_TIMERS)
-						Framework.Logging.Trace("Timer", GetType().Name + ": Timeout triggered.");
-						#endif
-						if (InState(inState))
+						try
 						{
-							if (callback != null)
-								callback();
-							else
-								throw new FrameworkTimeout(GetType().Name + ": Timeout in state " + inState);
+							#if (TRACE_TIMERS)
+							Framework.Logging.Trace("Timer", GetType().Name + ": Timeout triggered.");
+							#endif
+							if (InState(inState))
+							{
+								if (callback != null)
+									callback();
+								else
+									throw new FrameworkTimeout(GetType().Name + ": Timeout in state " + inState);
+							}
 						}
-						timer.Dispose();
+						finally
+						{
+							timer.Dispose();
+						}
 					}),
 					null,
 					milliseconds, 
