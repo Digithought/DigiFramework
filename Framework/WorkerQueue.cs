@@ -9,8 +9,13 @@ namespace Digithought.Framework
 	/// <remarks> This is based on the WorkerQueue in Dataphor. </remarks>
 	public class WorkerQueue
 	{
+		/// <summary> This is the longest this worker will hold on to an inactive thread. </summary>
+		/// <remarks> The shorter this is, the less potential thread reuse.  The longer, the greater the time to shut-down or release the thread back. </remarks>
+		private const int ReuseThreadInterval = 20000;	// 20seconds
+
 		private Queue<System.Action> _asyncQueue = new Queue<System.Action>();
-		private Thread _asyncThread;
+		private volatile Thread _asyncThread;
+		private ManualResetEvent _asyncEvent = new ManualResetEvent(false);
 		private ThreadPriority _priority;
 
 		/// <summary> Event which is executed (on the async thread) each time the async operation queue becomes empty. </summary>
@@ -32,8 +37,8 @@ namespace Digithought.Framework
 		/// <summary> Returns true if the current thread is on this worker. </summary>
 		public bool CurrentThreadOn()
 		{
-			lock (_asyncQueue)
-				return _asyncThread != null && _asyncThread.ManagedThreadId == System.Threading.Thread.CurrentThread.ManagedThreadId;
+			var thread = _asyncThread;
+			return thread != null && thread.ManagedThreadId == System.Threading.Thread.CurrentThread.ManagedThreadId;
 		}
 
 		/// <summary> Invokes an action to be performed on the worker.  The work is guaranteed not be be done synchronously with this call. </summary>
@@ -44,14 +49,14 @@ namespace Digithought.Framework
 				lock (_asyncQueue)
 				{
 					_asyncQueue.Enqueue(action);
-
+					_asyncEvent.Set();
 					if (_asyncThread == null)
 					{
 						_asyncThread = new Thread(new ThreadStart(AsyncQueueServiceThread));
 						_asyncThread.Priority = _priority;
 						_asyncThread.Start();
 					}
-				}
+                }
 			}
 		}
 
@@ -88,61 +93,35 @@ namespace Digithought.Framework
 
 		private void AsyncQueueServiceThread()
 		{
-			DoAsyncOperationsStarted();
-
 			while (true)
 			{
 				System.Action nextAction;
 				lock (_asyncQueue)
 				{
-					if (_asyncQueue.Count > 0)
-						nextAction = _asyncQueue.Dequeue();
-					else
+					nextAction = _asyncQueue.Count > 0 ? _asyncQueue.Dequeue() : null;
+					if (_asyncQueue.Count == 0)
+						_asyncEvent.Reset();
+				}
+				if (nextAction != null)
+					try
 					{
-						_asyncThread = null;
-						break;
+						nextAction();
 					}
-				}
-				try
+					catch (Exception exception)
+					{
+						System.Diagnostics.Debug.WriteLine(exception.ToString());
+						// Don't allow exceptions to leave this thread or the application will terminate
+					}
+				else
 				{
-					nextAction();
+					if (!_asyncEvent.WaitOne(ReuseThreadInterval))
+						lock (_asyncQueue)
+							if (_asyncQueue.Count == 0)
+							{
+								_asyncThread = null;
+								break;
+							}
 				}
-				catch (Exception exception)
-				{
-					System.Diagnostics.Debug.WriteLine(exception.ToString());
-					// Don't allow exceptions to leave this thread or the application will terminate
-				}
-			}
-
-			DoAsyncOperationsComplete();
-		}
-
-		private void DoAsyncOperationsStarted()
-		{
-			try
-			{
-				if (AsyncOperationsStarted != null)
-					AsyncOperationsStarted(this, EventArgs.Empty);
-			}
-			catch (Exception exception)
-			{
-				System.Diagnostics.Debug.WriteLine(exception.ToString());
-				// Don't allow exceptions to leave this thread or the application will terminate
-			}
-		}
-
-		/// <summary> Notifies that all async operations are complete. </summary>
-		private void DoAsyncOperationsComplete()
-		{
-			try
-			{
-				if (AsyncOperationsComplete != null)
-					AsyncOperationsComplete(this, EventArgs.Empty);
-			}
-			catch (Exception exception)
-			{
-				System.Diagnostics.Debug.WriteLine(exception.ToString());
-				// Don't allow exceptions to leave this thread or the application will terminate
 			}
 		}
 
@@ -153,50 +132,6 @@ namespace Digithought.Framework
 			{
 				_asyncQueue.Clear();
 			}
-		}
-
-		/// <summary> Executes a set of actions, returning only when all actions have completed (or errored). </summary>
-		/// <remarks> In the case of one or more exceptions being thrown by actions, the last exception
-		/// throw will be re-thrown on the calling thread. </remarks>
-		public void DoMany(Action[] actions)
-		{
-			// Create a set of wait handles
-			var events = Enumerable.Range(0, actions.Length).Select(e => new ManualResetEvent(false)).ToArray();
-			
-			Exception exception = null;
-			for (int i = 0; i < actions.Length; i++)
-			{
-				var action = actions[i];
-				var resetEvent = events[i];
-				if (action != null)
-				{
-					ThreadPool.QueueUserWorkItem
-					(
-						(s) =>
-						{
-							try
-							{
-								action();
-							}
-							catch (Exception localException)
-							{
-								exception = localException;
-							}
-							resetEvent.Set();
-						}
-					);
-				}
-			}
-
-			WaitHandle.WaitAll(events);
-
-			// Clean up all wait handles
-			foreach (var resetEvent in events)
-				resetEvent.Close();
-
-			// Re-throw last caught exception
-			if (exception != null)
-				throw exception;
 		}
 	}
 }
