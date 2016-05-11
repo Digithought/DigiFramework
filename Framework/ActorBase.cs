@@ -171,41 +171,57 @@ namespace Digithought.Framework
 				return null;
 		}
 
-		protected void DoIn(int milliseconds, Action callback)
+		protected void Timeout(int milliseconds, Action callback)
 		{
 			System.Threading.ThreadPool.QueueUserWorkItem(s => { System.Threading.Thread.Sleep(milliseconds); Act(callback); });
 		}
 
-		protected void Continue<T>(System.Threading.Tasks.Task<T> task, Action<T> action)
+		protected void Continue<T>(System.Threading.Tasks.Task<T> task, Action<T> action, Action canceled = null)
 		{
 			task.ContinueWith(t =>
 				{
-					try
-					{
-						var result = t.Result;
-						Act(() => action(result));
-					}
-					catch (Exception e)
-					{
-						Act(() => { throw e; });
-					}
+                    if (t.IsFaulted)
+                        Act(() => { throw t.Exception; });
+                    else if (t.IsCanceled)
+                    {
+                        if (canceled != null)
+                            Act(canceled);
+                    }
+                    else   
+                        try
+					    {
+						    var result = t.Result;
+						    Act(() => action(result));
+					    }
+					    catch (Exception e)
+					    {
+						    Act(() => { throw e; });
+					    }
 				}
 			);
 		}
 
-		protected void Continue(System.Threading.Tasks.Task task, Action action)
+		protected void Continue(System.Threading.Tasks.Task task, Action action, Action canceled = null)
 		{
 			task.ContinueWith(t =>
-			{
-				try
-				{
-					Act(() => action());
-				}
-				catch (Exception e)
-				{
-					Act(() => { throw e; });
-				}
-			}
+			    {
+                    if (t.IsFaulted)
+                        Act(() => { throw t.Exception; });
+                    else if (t.IsCanceled)
+                    {
+                        if (canceled != null)
+                            Act(canceled);
+                    }
+                    else
+                        try
+                        {
+					        Act(() => action());
+				        }
+				        catch (Exception e)
+				        {
+					        Act(() => { throw e; });
+				        }
+			    }
 			);
 		}
 	}
