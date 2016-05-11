@@ -25,7 +25,10 @@ namespace Digithought.Framework
 					var errorLoading = false;
 					var jsonSettings = new Newtonsoft.Json.JsonSerializerSettings 
 						{ 
-							Error = (o, e) => { errorLoading = true; }, 
+							Error = (o, e) => { 
+								errorLoading = true;
+								Logging.Error(e.ErrorContext.Error);
+							}, 
 							ObjectCreationHandling = Newtonsoft.Json.ObjectCreationHandling.Reuse 
 						};
 					Newtonsoft.Json.JsonConvert.PopulateObject(config, copy, jsonSettings);
