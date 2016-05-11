@@ -15,7 +15,7 @@ namespace Digithought.Framework
 					yield return child;
 		}
 
-		/// <summary> Flattens a list of nested items. </summary>
+		/// <summary> Flattens a list of nested items, returning in addition, the indexes of the outer list. </summary>
 		public static IEnumerable<KeyValuePair<int, TResult>> ExpandWithIndex<TSource, TResult>(this IEnumerable<TSource> items, Func<TSource, IEnumerable<TResult>> children)
 		{
 			var i = 0;
@@ -23,6 +23,22 @@ namespace Digithought.Framework
 			{
 				foreach (var child in children(item))
 					yield return new KeyValuePair<int, TResult>(i, child);
+				++i;
+			}
+		}
+
+		/// <summary> Flattens a list of nested items, returning in addition, the relative indexes of the outer and inner lists. </summary>
+		public static IEnumerable<KeyValuePair<int, KeyValuePair<int, TResult>>> ExpandWithIndexes<TSource, TResult>(this IEnumerable<TSource> items, Func<TSource, IEnumerable<TResult>> children)
+		{
+			var i = 0;
+			foreach (var item in items)
+			{
+				var j = 0;
+				foreach (var child in children(item))
+				{
+					yield return new KeyValuePair<int, KeyValuePair<int, TResult>>(i, new KeyValuePair<int, TResult>(j, child));
+					++j;
+				}
 				++i;
 			}
 		}
