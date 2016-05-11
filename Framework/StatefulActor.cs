@@ -201,13 +201,14 @@ namespace Digithought.Framework
 			);
 		}
 
-		/// <summary> Calls back after a given interval if still in the current state 
+		/// <summary> Calls back (once) after a given interval if still in the current state 
 		/// (or optionally given super-state). </summary>
 		/// <remarks> If the callback is omitted, a timeout exception is thrown. </remarks>
 		protected void TimeoutWhileInState(int milliseconds, Action callback = null, TState? whileIn = null)
 		{
 			var inState = whileIn ?? State;
 			System.Threading.Timer timer = null;
+			var leftState = false;
 			timer = new System.Threading.Timer
 				(
 					s => Act(() =>
@@ -217,8 +218,9 @@ namespace Digithought.Framework
 							#if (TRACE_TIMERS)
 							Framework.Logging.Trace("Timer", GetType().Name + ": Timeout triggered.");
 							#endif
-							if (InState(inState))
+							if (!leftState)
 							{
+								leftState = true;	// under no circumstances, call back again
 								if (callback != null)
 									callback();
 								else
@@ -242,6 +244,7 @@ namespace Digithought.Framework
 					#if (TRACE_TIMERS)
 					Framework.Logging.Trace("Timer", GetType().Name + ": Timeout terminating due to state change.");
 					#endif
+					leftState = true;
 					timer.Dispose();
 				}
 			);
@@ -250,6 +253,7 @@ namespace Digithought.Framework
 		/// <summary> Checks a given condition whenever the given other actor changes state; if 
 		/// the condition passes, a given action is invoked, but all of this only while in the 
 		/// current state (or given super-state). </summary>
+		/// <remarks> If the condition is already met, the callback is invoked immediately with null transition information. </remarks>
 		protected void WatchOtherWhileInState<OA, OS, OT>(IStatefulActor<OA, OS, OT> other, WatchOtherCondition<OS, OT> condition, Action action, TState? whileIn = null)
 			where OS : struct
 		{
@@ -312,7 +316,7 @@ namespace Digithought.Framework
 			var leftState = false;
 			WatchState(inState, () => { leftState = true; });
 			if (InState(inState))
-				Continue(task, v => { if (!leftState && InState(inState)) with(v); });
+				Continue(task, v => { if (!leftState && InState(inState)) with(v); }, () => { throw new FrameworkException("Task canceled"); });
 		}
 
 		/// <summary> Continues with a given delegate once the given task completes, but only 
@@ -323,7 +327,7 @@ namespace Digithought.Framework
 			var leftState = false;
 			WatchState(inState, () => { leftState = true; });
 			if (InState(inState))
-				Continue(task, () => { if (!leftState && InState(inState)) with(); });
+				Continue(task, () => { if (!leftState && InState(inState)) with(); }, () => { throw new FrameworkException("Task canceled"); });
 		}
 	}
 
