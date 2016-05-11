@@ -10,19 +10,13 @@ namespace Digithought.Framework
 	public class WorkerQueue
 	{
 		/// <summary> This is the longest this worker will hold on to an inactive thread. </summary>
-		/// <remarks> The shorter this is, the less potential thread reuse.  The longer, the greater the time to shut-down or release the thread back. </remarks>
+		/// <remarks> The shorter this is, the less potential thread reuse.  The longer, the more time unused thread handles are held on to. </remarks>
 		private const int ReuseThreadInterval = 20000;	// 20seconds
 
 		private Queue<System.Action> _asyncQueue = new Queue<System.Action>();
 		private volatile Thread _asyncThread;
 		private ManualResetEvent _asyncEvent = new ManualResetEvent(false);
 		private ThreadPriority _priority;
-
-		/// <summary> Event which is executed (on the async thread) each time the async operation queue becomes empty. </summary>
-		public event EventHandler AsyncOperationsComplete;
-
-		/// <summary> Event which is executed (on the async thread) each time the async operation queue begins to be serviced. </summary>
-		public event EventHandler AsyncOperationsStarted;
 
 		public ThreadPriority Priority
 		{
@@ -53,6 +47,7 @@ namespace Digithought.Framework
 					if (_asyncThread == null)
 					{
 						_asyncThread = new Thread(new ThreadStart(AsyncQueueServiceThread));
+						_asyncThread.IsBackground = true;	// Don't block process exit
 						_asyncThread.Priority = _priority;
 						_asyncThread.Start();
 					}
