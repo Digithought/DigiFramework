@@ -171,6 +171,7 @@ namespace Digithought.Framework
 				return null;
 		}
 
+        /// <summary> One-time timer based callback. </summary>
 		protected void Timeout(int milliseconds, Action callback)
 		{
 			System.Threading.ThreadPool.QueueUserWorkItem(s => { System.Threading.Thread.Sleep(milliseconds); Act(callback); });

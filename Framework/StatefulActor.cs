@@ -165,19 +165,20 @@ namespace Digithought.Framework
 
 		/// <summary> Repeatedly invokes the a callback while in the current state 
 		/// (or optionally given super-state). </summary>
-		protected void RefreshWhileInState(int milliseconds, Action<float> callback, TState? whileIn = null)
+		protected void RepeatWhileInState(int milliseconds, Action<float> callback, TState? whileIn = null)
 		{
 			var inState = whileIn ?? State;
 			var watch = new System.Diagnostics.Stopwatch();
 			watch.Start();
-			var timer = new System.Threading.Timer
+            var leftState = false;  // use flag rather than check to avoid falsely firing upon quick re-entry of state
+            var timer = new System.Threading.Timer
 				(
 					s => Act(() => 
 						{
 							#if (TRACE_TIMERS)
 							Framework.Logging.Trace("Timer", GetType().Name + ": Refresh triggered after " + watch.ElapsedMilliseconds + "ms.");
 							#endif
-							if (InState(inState))
+							if (!leftState)
 							{ 
 								var ellapsed = (float)watch.ElapsedTicks / (float)System.Diagnostics.Stopwatch.Frequency;
 								watch.Restart(); 
@@ -196,6 +197,7 @@ namespace Digithought.Framework
 					#if (TRACE_TIMERS)
 					Framework.Logging.Trace("Timer", GetType().Name + ": Refresh terminating due to state change.");
 					#endif
+                    leftState = true;
 					timer.Dispose();
 				}
 			);
@@ -208,8 +210,8 @@ namespace Digithought.Framework
 		{
 			var inState = whileIn ?? State;
 			System.Threading.Timer timer = null;
-			var leftState = false;
-			timer = new System.Threading.Timer
+            var leftState = false;  // use flag rather than check to avoid falsely firing upon quick re-entry of state
+            timer = new System.Threading.Timer
 				(
 					s => Act(() =>
 					{
