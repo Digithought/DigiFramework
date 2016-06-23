@@ -91,5 +91,84 @@ namespace Digithought.Framework
                 current = getNext(current);
             }
         }
+
+		public static T Aggregate<T>(this IList<T> list, Func<T, T, T> apply, Func<IList<T>, T> initialize = null, Func<IList<T>, T, T> finalize = null, Func<T> empty = null)
+		{
+			if (list == null || list.Count == 0)
+				if (empty != null)
+					return empty();
+				else
+					throw new ArgumentException("Cannot aggregate over an empty list.");
+
+			var value = initialize == null ? list[0] : initialize(list);
+
+			for (var i = 1; i < list.Count; ++i)
+				value = apply(value, list[i]);
+
+			return finalize == null ? value : finalize(list, value);
+		}
+
+		public static R Aggregate<T, R>(this IList<T> list, Func<IList<T>, R> initialize, Func<R, T, R> apply, Func<IList<T>, R, R> finalize = null, Func<R> empty = null)
+		{
+			if (list == null || list.Count == 0)
+				if (empty != null)
+					return empty();
+				else
+					throw new ArgumentException("Cannot aggregate over an empty list.");
+
+			var value = initialize(list);
+
+			for (var i = 1; i < list.Count; ++i)
+				value = apply(value, list[i]);
+
+			return finalize == null ? value : finalize(list, value);
+		}
+
+		public static IList<IList<T>> Group<T>(this IList<T> items, Func<T, T, bool> compare)
+		{
+			var result = new List<IList<T>>();
+			var group = Enumerable.Range(0, items.Count).Select(r => -1).ToArray();    // contains result indexes - all initialized to -1
+			for (var i = 0; i < items.Count; i++)
+			{
+				for (var j = i + 1; j < items.Count; j++)
+					if (compare(items[i], items[j]))
+						if (group[i] == -1)
+						{
+							if (group[j] == -1)
+							{
+								result.Add(new List<T> { items[i], items[j] });
+								group[i] = group[j] = result.Count - 1;
+							}
+							else
+							{
+								result[group[j]].Add(items[i]);
+								group[i] = group[j];
+							}
+						}
+						else
+						{
+							if (group[j] == -1)
+							{
+								result[group[i]].Add(items[j]);
+								group[j] = group[i];
+							}
+							else if (group[i] != group[j])
+							{
+								var a = Math.Min(group[i], group[j]);
+								var b = Math.Max(group[i], group[j]);
+								result[b].Each(r => result[a].Add(r));
+								result.RemoveAt(b);
+								for (var x = 0; x < group.Length; x++)
+									if (group[x] == b)
+										group[x] = a;
+									else if (group[x] > b)
+										group[x]--;
+							}
+						}
+				if (group[i] == -1)
+					result.Add(new List<T> { items[i] });
+			}
+			return result;
+		}
 	}
 }
