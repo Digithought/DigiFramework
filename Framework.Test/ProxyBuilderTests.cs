@@ -177,5 +177,54 @@ namespace WeedebudNet.Tests
 			var proxy = ProxyBuilder.Create<IEnum<TestEnum>>(invoker.Invoke);
 			Assert.AreEqual(TestEnum.Two, proxy.ReturnEnum(TestEnum.One));
 		}
+
+		public class SimpleBase
+		{
+			public virtual void BaseMethod()
+			{
+			}
+		}
+
+		public interface ISimple
+		{
+		}
+
+		[TestMethod]
+		public void InheritedInvocationTest()
+		{
+			var mockBase = new Mock<SimpleBase>();
+			mockBase.Setup(mock => mock.BaseMethod()).Verifiable();
+
+			var mockInvoker = new Mock<IInvoker>();
+			mockInvoker.Setup(mock => mock.Invoke(It.Is<MethodInfo>(m => m == typeof(SimpleBase).GetMethod("BaseMethod"))))
+				.Returns(null);
+
+			var invoker = mockInvoker.Object;
+			var proxy = ProxyBuilder.Create<ISimple>(invoker.Invoke, new ProxyOptions { Parent = typeof(SimpleBase) });
+			((SimpleBase)proxy).BaseMethod();
+
+			mockInvoker.Verify();
+		}
+
+		public interface IOther
+		{
+			void OtherMethod();
+		}
+
+		[TestMethod]
+		public void MultipleInterfacesTest()
+		{
+			var mockInvoker = new Mock<IInvoker>();
+			mockInvoker.Setup(mock => mock.Invoke(It.Is<MethodInfo>(m => m.Name == "OtherMethod")))
+				.Returns(null)
+				.Verifiable();
+
+			var invoker = mockInvoker.Object;
+			var proxy = ProxyBuilder.Create<ISimple>(invoker.Invoke, new ProxyOptions { AdditionalInterfaces = new[] { typeof(IOther) } });
+			((IOther)proxy).OtherMethod();
+
+			mockInvoker.Verify();
+		}
 	}
+
 }

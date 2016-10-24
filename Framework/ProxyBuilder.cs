@@ -67,8 +67,9 @@ namespace Digithought.Framework
 		/// <summary> Given an interface type (<c>T</c>), returns a proxy class which implements that interface and routes all calls to the given <c>invoker</c>. </summary>
 		/// <typeparam name="T"> Proxy interface. </typeparam>
 		/// <param name="invoker"> Instance of <c>IInvoker</c> to which all calls will be routed. </param>
+		/// <param name="options"> Optional configuration parameters. </param>
 		/// <returns> Proxied implementation of interface <c>T</c>. </returns>
-		public static T Create<T>(InvokeHandler invoker)
+		public static T Create<T>(InvokeHandler invoker, ProxyOptions options = null)
 		{
 			if (!typeof(T).IsInterface)
 			{
@@ -80,11 +81,18 @@ namespace Digithought.Framework
 				throw new InvalidOperationException("Cannot create a proxy for non-public interface " + typeof(T).Name);
 			}
 
-			var builder = GetTypeBuilder<T>(typeof(T).ToString());
+			if (options == null)
+				options = new ProxyOptions();
+
+			var builder = GetTypeBuilder<T>(typeof(T).ToString(), options.Parent);
 
 			var invokerField = builder.DefineField("invoker", typeof(InvokeHandler), FieldAttributes.Private | FieldAttributes.InitOnly);
 
-			foreach (var method in GetPublicMethods(typeof(T)))
+			foreach (var method in 
+				GetPublicMethods(typeof(T))
+					.Concat(options?.AdditionalInterfaces?.SelectMany(ai => GetPublicMethods(ai)) ?? new MethodInfo[0]
+				)
+			)
 			{
 				BuildMethodInvoker(builder, invokerField, method);
 			}
@@ -93,6 +101,13 @@ namespace Digithought.Framework
 
 			// Implement the interface, including properties and events
 			builder.AddInterfaceImplementation(typeof(T));
+			if (options.AdditionalInterfaces != null)
+			{
+				foreach (var i in options.AdditionalInterfaces)
+				{
+					builder.AddInterfaceImplementation(i);
+				}
+			}
 
 			var type = builder.CreateType();
 
@@ -182,26 +197,17 @@ namespace Digithought.Framework
 		/// <summary> Given a type, returns all public methods and all public methods of all implemented interfaces. </summary>
 		private static IEnumerable<MethodInfo> GetPublicMethods(Type type)
 		{
-			foreach (var super in type.GetInterfaces())
-			{
-				foreach (var member in super.GetMethods())
-				{
-					yield return member;
-				}
-			}
-			foreach (var member in type.GetMethods())
-			{
-				yield return member;
-			}
+			return type.GetInterfaces().SelectMany(i => i.GetMethods())
+				.Concat(type.GetMethods());
 		}
 
 		/// <summary> Generates a new, uniquely named type builder for the proxy. </summary>
-		private static TypeBuilder GetTypeBuilder<T>(string name)
+		private static TypeBuilder GetTypeBuilder<T>(string name, Type parent)
 		{
 			lock (_moduleLock)
 			{
 				_classIndex++;
-				return _module.DefineType("Proxy_" + name + "_" + _classIndex);
+				return _module.DefineType("Proxy_" + name + "_" + _classIndex, TypeAttributes.Class | TypeAttributes.Public, parent);
 			}
 		}
 	}

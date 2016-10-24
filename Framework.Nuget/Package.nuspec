@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>DigiFramework</id>
-    <version>1.0.2</version>
+    <version>1.0.4</version>
     <authors>Nathan Allan</authors>
     <description>
       Light-weight actor and state machine framework.  Ideal for robotics, machine control, network communication, and more.
@@ -17,7 +17,7 @@
     <iconUrl>https://raw.githubusercontent.com/Digithought/DigiFramework/master/DigiFramework%20Icon.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <licenseUrl>http://opensource.org/licenses/Apache-2.0</licenseUrl>
-    <copyright>Copyright  2015</copyright>
+    <copyright>Copyright  2016</copyright>
     <dependencies>
         <group targetFramework="net45">
           <dependency id="Newtonsoft.Json" version="7.0.1" />
