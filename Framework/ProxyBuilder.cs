@@ -70,56 +70,52 @@ namespace Digithought.Framework
 		/// <param name="options"> Optional configuration parameters. </param>
 		/// <returns> Proxied implementation of interface <c>T</c>. </returns>
 		public static T Create<T>(InvokeHandler invoker, ProxyOptions options = null)
-		{
-			if (!typeof(T).IsInterface)
-			{
-				throw new InvalidOperationException("Cannot create a proxy for non-interface type " + typeof(T).Name);
-			}
+        {
+            if (!typeof(T).IsInterface)
+            {
+                throw new InvalidOperationException("Cannot create a proxy for non-interface type " + typeof(T).Name);
+            }
 
-			if (typeof(T).IsNotPublic)
-			{
-				throw new InvalidOperationException("Cannot create a proxy for non-public interface " + typeof(T).Name);
-			}
+            if (typeof(T).IsNotPublic)
+            {
+                throw new InvalidOperationException("Cannot create a proxy for non-public interface " + typeof(T).Name);
+            }
 
-			if (options == null)
-				options = new ProxyOptions();
+            if (options == null)
+                options = new ProxyOptions();
 
-			var builder = GetTypeBuilder<T>(typeof(T).ToString(), options.Parent);
+            var builder = GetTypeBuilder<T>(typeof(T).ToString(), options.BaseClass);
 
-			var invokerField = builder.DefineField("invoker", typeof(InvokeHandler), FieldAttributes.Private | FieldAttributes.InitOnly);
+            var invokerField = builder.DefineField("invoker", typeof(InvokeHandler), FieldAttributes.Private | FieldAttributes.InitOnly);
 
-			foreach (var method in 
-				GetPublicMethods(typeof(T))
-					.Concat(options?.AdditionalInterfaces?.SelectMany(ai => GetPublicMethods(ai)) ?? new MethodInfo[0]
-				)
-			)
-			{
-				BuildMethodInvoker(builder, invokerField, method);
-			}
+            foreach (var method in GetMethods<T>(options))
+            {
+                BuildMethodInvoker(builder, invokerField, method);
+            }
 
-			BuildConstructor(builder, invokerField);
+            BuildConstructor(builder, invokerField);
 
-			// Implement the interface, including properties and events
-			builder.AddInterfaceImplementation(typeof(T));
-			if (options.AdditionalInterfaces != null)
-			{
-				foreach (var i in options.AdditionalInterfaces)
-				{
-					builder.AddInterfaceImplementation(i);
-				}
-			}
+            // Implement the interface, including properties and events
+            builder.AddInterfaceImplementation(typeof(T));
+            if (options.AdditionalInterfaces != null)
+            {
+                foreach (var i in options.AdditionalInterfaces)
+                {
+                    builder.AddInterfaceImplementation(i);
+                }
+            }
 
-			var type = builder.CreateType();
+            var type = builder.CreateType();
 
-			#if (DEBUG_PROXYBUILDER)
+#if (DEBUG_PROXYBUILDER)
 			module.CreateGlobalFunctions();
 			_assembly.Save("debug.dll");
-			#endif
+#endif
 
-			return (T)Activator.CreateInstance(type, new object[] { invoker });
-		}
+            return (T)Activator.CreateInstance(type, new object[] { invoker });
+        }
 
-		private static void BuildConstructor(TypeBuilder type, FieldBuilder invokerField)
+        private static void BuildConstructor(TypeBuilder type, FieldBuilder invokerField)
 		{
 			var builder = type.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, new Type[] { typeof(InvokeHandler) });
 
@@ -194,11 +190,19 @@ namespace Digithought.Framework
 			generator.Emit(OpCodes.Ret);
 		}
 
-		/// <summary> Given a type, returns all public methods and all public methods of all implemented interfaces. </summary>
-		private static IEnumerable<MethodInfo> GetPublicMethods(Type type)
+        private static IEnumerable<MethodInfo> GetMethods<T>(ProxyOptions options)
+        {
+            var excludeInterfaces = options.BaseClass == null ? new Type[0] : options.BaseClass.GetInterfaces();
+            return GetPublicMethods(typeof(T), excludeInterfaces)
+                .Union(options?.AdditionalInterfaces?.SelectMany(ai => GetPublicMethods(ai, excludeInterfaces)) ?? Enumerable.Empty<MethodInfo>()
+            );
+        }
+
+        /// <summary> Given a type, returns all public methods and all public methods of all implemented interfaces. </summary>
+        private static IEnumerable<MethodInfo> GetPublicMethods(Type type, Type[] excludeInterfaces)
 		{
-			return type.GetInterfaces().SelectMany(i => i.GetMethods())
-				.Concat(type.GetMethods());
+            return type.GetInterfaces().Except(excludeInterfaces).SelectMany(i => i.GetMethods())
+				.Union(excludeInterfaces.Contains(type) ? Enumerable.Empty<MethodInfo>() : type.GetMethods());
 		}
 
 		/// <summary> Generates a new, uniquely named type builder for the proxy. </summary>

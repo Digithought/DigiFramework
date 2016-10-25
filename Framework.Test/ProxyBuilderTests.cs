@@ -200,13 +200,61 @@ namespace WeedebudNet.Tests
 				.Returns(null);
 
 			var invoker = mockInvoker.Object;
-			var proxy = ProxyBuilder.Create<ISimple>(invoker.Invoke, new ProxyOptions { Parent = typeof(SimpleBase) });
+			var proxy = ProxyBuilder.Create<ISimple>(invoker.Invoke, new ProxyOptions { BaseClass = typeof(SimpleBase) });
 			((SimpleBase)proxy).BaseMethod();
 
 			mockInvoker.Verify();
 		}
 
-		public interface IOther
+        // TODO: ability to pass constructor arguments to base
+        //public class ConstructorBase
+        //{
+        //    public int X;
+        //    public int Y;
+
+        //    public ConstructorBase(int x, int y)
+        //    {
+        //        X = x;
+        //        Y = y;
+        //    }
+        //}
+
+        //[TestMethod]
+        //public void InteritedConstructorTest()
+        //{
+        //    var mockInvoker = new Mock<IInvoker>();
+        //    var invoker = mockInvoker.Object;
+        //    var proxy = ProxyBuilder.Create<ISimple>(invoker.Invoke, new ProxyOptions { Parent = typeof(ConstructorBase), ConstructorArguments = new object[] { 5, 6 } });
+        //    var theBase = (ConstructorBase)proxy;
+        //    Assert.AreEqual(5, theBase.X);
+        //    Assert.AreEqual(6, theBase.X);
+        //}
+
+        public class ImplementingBase : IOther
+        {
+            public virtual void OtherMethod()
+            {
+            }
+        }
+
+        [TestMethod]
+        public void BaseImplementedTest()
+        {
+            var mockBase = new Mock<ImplementingBase>();
+            mockBase.Setup(mock => mock.OtherMethod()).Verifiable();
+
+            var mockInvoker = new Mock<IInvoker>();
+            mockInvoker.Setup(mock => mock.Invoke(It.IsAny<MethodInfo>(), It.IsAny<object[]>()))
+                .Throws(new Exception("Proxy's Invoke for OtherMethod shouldn't be called."));
+            var invoker = mockInvoker.Object;
+
+            var proxy = ProxyBuilder.Create<IOther>(invoker.Invoke, new ProxyOptions { BaseClass = typeof(ImplementingBase) });
+            proxy.OtherMethod();
+
+            mockInvoker.Verify();
+        }
+
+        public interface IOther
 		{
 			void OtherMethod();
 		}
