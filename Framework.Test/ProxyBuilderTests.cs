@@ -36,8 +36,8 @@ namespace WeedebudNet.Tests
 			mockInvoker.Setup(mock => mock.Invoke(It.Is<MethodInfo>(m => m == typeof(IMethodInterface).GetMethod("GetVoid")), It.Is<object[]>(p => p.Length == 0)))
 				.Returns(null)
 				.Verifiable();
-
 			var invoker = mockInvoker.Object;
+
 			var proxy = ProxyBuilder.Create<IMethodInterface>(invoker.Invoke);
 			Assert.AreEqual(5, proxy.GetValue(1, 2f));
 			Assert.AreEqual(o3, proxy.GetReference(o1, o2));
@@ -64,8 +64,8 @@ namespace WeedebudNet.Tests
 				.Returns(o1);
 			mockInvoker.Setup(mock => mock.Invoke(It.Is<MethodInfo>(m => m == typeof(IPropertyInterface).GetMethod("set_Reference")), It.Is<object[]>(p => p.Length == 1 && p[0] == o2)))
 				.Verifiable();
-
 			var invoker = mockInvoker.Object;
+
 			var proxy = ProxyBuilder.Create<IPropertyInterface>(invoker.Invoke);
 			Assert.AreEqual(5, proxy.Value);
 			proxy.Value = 123;
@@ -113,8 +113,8 @@ namespace WeedebudNet.Tests
 				.Verifiable();
 			mockInvoker.Setup(mock => mock.Invoke(It.Is<MethodInfo>(m => m == typeof(IEventInterface).GetMethod("remove_VoidEvent")), It.Is<object[]>(p => p.Length == 1 && p[0] is Action)))
 				.Verifiable();
-
 			var invoker = mockInvoker.Object;
+
 			var proxy = ProxyBuilder.Create<IEventInterface>(invoker.Invoke);
 			proxy.ValueEvent += ValueMethod;
 			proxy.ValueEvent -= ValueMethod;
@@ -147,8 +147,8 @@ namespace WeedebudNet.Tests
 			//    .Returns(5);
 			//mockInvoker.Setup(mock => mock.Invoke(It.Is<MethodInfo>(m => m.Name == "DerivedMethod"), It.Is<object[]>(p => p.Length == 1 && (int)p[0] == 1)))
 			//    .Returns(5);
-
 			var invoker = mockInvoker.Object;
+
 			var proxy = ProxyBuilder.Create<IGenericDerived>(invoker.Invoke);
 			Assert.AreEqual(5, proxy.MethodOfT(1));
 			//Assert.AreEqual(5, proxy.BaseMethod(1));
@@ -172,8 +172,8 @@ namespace WeedebudNet.Tests
 			var mockInvoker = new Mock<IInvoker>();
 			mockInvoker.Setup(mock => mock.Invoke(It.Is<MethodInfo>(m => m.Name == "ReturnEnum"), It.Is<object[]>(p => p.Length == 1 && (TestEnum)p[0] == TestEnum.One)))
 				.Returns(TestEnum.Two);
-
 			var invoker = mockInvoker.Object;
+
 			var proxy = ProxyBuilder.Create<IEnum<TestEnum>>(invoker.Invoke);
 			Assert.AreEqual(TestEnum.Two, proxy.ReturnEnum(TestEnum.One));
 		}
@@ -198,8 +198,8 @@ namespace WeedebudNet.Tests
 			var mockInvoker = new Mock<IInvoker>();
 			mockInvoker.Setup(mock => mock.Invoke(It.Is<MethodInfo>(m => m == typeof(SimpleBase).GetMethod("BaseMethod"))))
 				.Returns(null);
-
 			var invoker = mockInvoker.Object;
+
 			var proxy = ProxyBuilder.Create<ISimple>(invoker.Invoke, new ProxyOptions { BaseClass = typeof(SimpleBase) });
 			((SimpleBase)proxy).BaseMethod();
 
@@ -259,7 +259,31 @@ namespace WeedebudNet.Tests
 			void OtherMethod();
 		}
 
-		[TestMethod]
+        public class BaseWithConstructor
+        {
+            public int X;
+
+            public BaseWithConstructor()
+            {
+                X = 5;
+            }
+        }
+
+        [TestMethod]
+        public void InheritedConstructorTest()
+        {
+            var mockBase = new Mock<BaseWithConstructor>();
+
+            var mockInvoker = new Mock<IInvoker>();
+            var invoker = mockInvoker.Object;
+
+            var proxy = ProxyBuilder.Create<ISimple>(invoker.Invoke, new ProxyOptions { BaseClass = typeof(BaseWithConstructor) });
+            Assert.AreEqual(5, ((BaseWithConstructor)proxy).X);
+
+            mockInvoker.Verify();
+        }
+
+        [TestMethod]
 		public void MultipleInterfacesTest()
 		{
 			var mockInvoker = new Mock<IInvoker>();

@@ -65,6 +65,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ProxyBuilder.cs" />
     <Compile Include="ProxyOptions.cs" />
+    <Compile Include="ReflectionUtility.cs" />
     <Compile Include="StatefulActor.cs" />
     <Compile Include="StateMachine.cs" />
     <Compile Include="WorkerQueue.cs" />

@@ -110,19 +110,6 @@ namespace Digithought.Framework
 			}
 		}
 
-		private static void UnravelTargetException(Action call)
-		{
-			// Exceptions from dynamic invoke calls are wrapped in a TargetInvocationException, we must unravel them
-			try
-			{
-				call();
-			}
-			catch (TargetInvocationException e)
-			{
-				throw e.InnerException;
-			}
-		}
-
 		// All actor calls come through this method
 		// WARNING: this occurs in a different thread in general
 		public virtual object Invoke(MethodInfo method, params object[] parameters)
@@ -137,11 +124,11 @@ namespace Digithought.Framework
 			Action work;
 			var voidReturn = method.ReturnType == typeof(void);
 			if (voidReturn)
-				work = () => InvokeHandlingErrors(() => UnravelTargetException(() => InnerInvoke(() => method.Invoke(this, parameters), method, parameters)));
+				work = () => InvokeHandlingErrors(() => ReflectionUtility.UnravelTargetException(() => InnerInvoke(() => method.Invoke(this, parameters), method, parameters)));
 			else
 			{
 				result = GetDefaultReturnValue(method);
-				work = () => InvokeHandlingErrors(() => UnravelTargetException(() => InnerInvoke(() => { result = method.Invoke(this, parameters); }, method, parameters)));
+				work = () => InvokeHandlingErrors(() => ReflectionUtility.UnravelTargetException(() => InnerInvoke(() => { result = method.Invoke(this, parameters); }, method, parameters)));
 			}
 			// Perform synchronously or asynchronously depending on whether the current thread is the actor's
 			if (_worker.CurrentThreadOn())

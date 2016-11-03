@@ -93,7 +93,7 @@ namespace Digithought.Framework
                 BuildMethodInvoker(builder, invokerField, method);
             }
 
-            BuildConstructor(builder, invokerField);
+            BuildConstructor(builder, invokerField, options);
 
             // Implement the interface, including properties and events
             builder.AddInterfaceImplementation(typeof(T));
@@ -115,7 +115,7 @@ namespace Digithought.Framework
             return (T)Activator.CreateInstance(type, new object[] { invoker });
         }
 
-        private static void BuildConstructor(TypeBuilder type, FieldBuilder invokerField)
+        private static void BuildConstructor(TypeBuilder type, FieldBuilder invokerField, ProxyOptions options)
 		{
 			var builder = type.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, new Type[] { typeof(InvokeHandler) });
 
@@ -123,10 +123,18 @@ namespace Digithought.Framework
 
 			// base()
 			generator.Emit(OpCodes.Ldarg_0);
-			generator.Emit(OpCodes.Call, _objectConstructor);
+            if (options.BaseClass == null)
+                generator.Emit(OpCodes.Call, _objectConstructor);
+            else
+            {
+                var constructor = options.BaseClass.GetConstructor(new Type[0]);
+                if (constructor == null)
+                    throw new Exception("The base class must have a constructor that takes no arguments.");
+                generator.Emit(OpCodes.Call, constructor);
+            }
 
-			// this.invoker = invoker 
-			generator.Emit(OpCodes.Ldarg_0);
+            // this.invoker = invoker 
+            generator.Emit(OpCodes.Ldarg_0);
 			generator.Emit(OpCodes.Ldarg_1);
 			generator.Emit(OpCodes.Stfld, invokerField);
 
