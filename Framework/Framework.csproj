@@ -16,15 +16,19 @@
 	  <PackageReference Include="System.Reflection.Emit" Version="4.3.0" />
 	</ItemGroup>
 	<PropertyGroup>
-		<Version>1.0.2.0</Version>
-		<Authors>Author 1</Authors>
+		<Version>1.0.11</Version>
+		<Authors>Nathan Allan</Authors>
 		<Company>Digithought</Company>
 		<Product>DigiFramework</Product>
 		<PackageId>DigiFramework</PackageId>
-		<AssemblyVersion>1.0.2.0</AssemblyVersion>
-		<FileVersion>1.0</FileVersion>
+		<AssemblyVersion>1.0.11.0</AssemblyVersion>
+		<FileVersion>1.0.11.0</FileVersion>
 		<NeutralLanguage>en</NeutralLanguage>
-		<Description>Light-weight actor and state machine framework.</Description>
+		<Description>Light-weight actor and state machine framework.  Ideal for robotics, machine control, network communication, and more.</Description>
 		<Copyright>Copyright © 2019 Digithought LLC</Copyright>
+		<PackageProjectUrl>https://github.com/Digithought/DigiFramework</PackageProjectUrl>
+		<PackageIconUrl>https://raw.githubusercontent.com/Digithought/DigiFramework/master/DigiFramework%20Icon.png</PackageIconUrl>
+		<PackageLicenseUrl>http://opensource.org/licenses/Apache-2.0</PackageLicenseUrl>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 	</PropertyGroup>
 </Project>
