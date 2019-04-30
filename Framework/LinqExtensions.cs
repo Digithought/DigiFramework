@@ -170,5 +170,39 @@ namespace Digithought.Framework
 			}
 			return result;
 		}
+
+		public static int IndexOfMax<T>(this IEnumerable<T> items, Func<T, double> eval)
+		{
+			var bestIndex = -1;
+			double bestValue = double.MinValue;
+			var i = 0;
+			foreach (var item in items)
+			{
+				var value = eval(item);
+				if (value > bestValue)
+				{
+					bestIndex = i;
+					bestValue = value;
+				}
+				++i;
+			}
+			return bestIndex;
+		}
+
+		public static T ValueOfMax<T>(this IEnumerable<T> items, Func<T, double> eval, T initialItem = default(T))
+		{
+			var bestItem = initialItem;
+			double bestValue = double.MinValue;
+			foreach (var item in items)
+			{
+				var value = eval(item);
+				if (value > bestValue)
+				{
+					bestItem = item;
+					bestValue = value;
+				}
+			}
+			return bestItem;
+		}
 	}
 }
