@@ -9,9 +9,9 @@ namespace Digithought.Framework
 {
     public static class ReflectionUtility
     {
-        public static void UnravelTargetException(Action call)
+		/// <summary> Exceptions from dynamic invoke calls are wrapped in a TargetInvocationException, this unravels them. </summary>
+		public static void UnravelTargetException(Action call)
         {
-            // Exceptions from dynamic invoke calls are wrapped in a TargetInvocationException, we must unravel them
             try
             {
                 call();
@@ -22,9 +22,9 @@ namespace Digithought.Framework
             }
         }
 
-        public static T UnravelTargetException<T>(Func<T> call)
+		/// <summary> Exceptions from dynamic invoke calls are wrapped in a TargetInvocationException, this unravels them. </summary>
+		public static T UnravelTargetException<T>(Func<T> call)
         {
-            // Exceptions from dynamic invoke calls are wrapped in a TargetInvocationException, we must unravel them
             try
             {
                 return call();

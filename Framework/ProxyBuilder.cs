@@ -45,8 +45,9 @@ namespace Digithought.Framework
 			typeof(System.Reflection.MethodBase).GetMethod("GetMethodFromHandle", new Type[] { typeof(System.RuntimeMethodHandle), typeof(System.RuntimeTypeHandle) });
 		private static readonly ConstructorInfo _objectConstructor = typeof(object).GetConstructor(new Type[0]);
 		private static readonly MethodInfo _invokeHandlerInvoke = typeof(InvokeHandler).GetMethod("Invoke");
+		private static readonly MethodInfo _advancedInvokeHandlerInvoke = typeof(AdvancedInvokeHandler).GetMethod("Invoke");
 		private static readonly AssemblyBuilder _assembly = 
-			AppDomain.CurrentDomain.DefineDynamicAssembly
+			AssemblyBuilder.DefineDynamicAssembly
 			(
 				new AssemblyName(AssemblyName),
 				#if (DEBUG_PROXYBUILDER)
@@ -61,7 +62,37 @@ namespace Digithought.Framework
 
 		static ProxyBuilder()
 		{
-			_module = _assembly.DefineDynamicModule(ModuleName, ModuleName);
+			_module = _assembly.DefineDynamicModule(ModuleName);
+		}
+
+		/// <summary> Given an interface type (<c>T</c>), returns a proxy class which implements that interface and routes all calls to the given <c>invoker</c>. </summary>
+		/// <typeparam name="T"> Proxy interface. </typeparam>
+		/// <param name="invoker"> Instance of <c>IInvoker</c> to which all calls will be routed. </param>
+		/// <returns> Proxied implementation of interface <c>T</c>. </returns>
+		public static T Create<T>(InvokeHandler invoker)
+		{
+			ValidateType<T>();
+
+			var builder = GetTypeBuilder<T>(typeof(T).ToString(), null);
+
+			var invokerField = builder.DefineField("invoker", typeof(InvokeHandler), FieldAttributes.Private | FieldAttributes.InitOnly);
+
+			foreach (var method in GetPublicMethods(typeof(T), new Type[0]))
+				BuildMethodInvoker(builder, invokerField, method, false);
+
+			BuildConstructor(builder, invokerField, null, typeof(InvokeHandler));
+
+			// Implement the interface, including properties and events
+			builder.AddInterfaceImplementation(typeof(T));
+
+			var type = builder.CreateTypeInfo();
+
+#if (DEBUG_PROXYBUILDER)
+			module.CreateGlobalFunctions();
+			_assembly.Save("debug.dll");
+#endif
+
+			return (T)Activator.CreateInstance(type, new object[] { invoker });
 		}
 
 		/// <summary> Given an interface type (<c>T</c>), returns a proxy class which implements that interface and routes all calls to the given <c>invoker</c>. </summary>
@@ -69,65 +100,62 @@ namespace Digithought.Framework
 		/// <param name="invoker"> Instance of <c>IInvoker</c> to which all calls will be routed. </param>
 		/// <param name="options"> Optional configuration parameters. </param>
 		/// <returns> Proxied implementation of interface <c>T</c>. </returns>
-		public static T Create<T>(InvokeHandler invoker, ProxyOptions options = null)
-        {
-            if (!typeof(T).IsInterface)
-            {
-                throw new InvalidOperationException("Cannot create a proxy for non-interface type " + typeof(T).Name);
-            }
+		public static T CreateAdvanced<T>(AdvancedInvokeHandler invoker, ProxyOptions options = null)
+		{
+			ValidateType<T>();
 
-            if (typeof(T).IsNotPublic)
-            {
-                throw new InvalidOperationException("Cannot create a proxy for non-public interface " + typeof(T).Name);
-            }
+			if (options == null)
+				options = new ProxyOptions();
 
-            if (options == null)
-                options = new ProxyOptions();
+			var builder = GetTypeBuilder<T>(typeof(T).ToString(), options.BaseClass);
 
-            var builder = GetTypeBuilder<T>(typeof(T).ToString(), options.BaseClass);
+			var invokerField = builder.DefineField("invoker", typeof(AdvancedInvokeHandler), FieldAttributes.Private | FieldAttributes.InitOnly);
 
-            var invokerField = builder.DefineField("invoker", typeof(InvokeHandler), FieldAttributes.Private | FieldAttributes.InitOnly);
+			foreach (var method in GetMethods<T>(options))
+				BuildMethodInvoker(builder, invokerField, method, true);
 
-            foreach (var method in GetMethods<T>(options))
-            {
-                BuildMethodInvoker(builder, invokerField, method);
-            }
+			BuildConstructor(builder, invokerField, options, typeof(AdvancedInvokeHandler));
 
-            BuildConstructor(builder, invokerField, options);
+			// Implement the interface, including properties and events
+			builder.AddInterfaceImplementation(typeof(T));
+			if (options.AdditionalInterfaces != null)
+			{
+				foreach (var i in options.AdditionalInterfaces)
+					builder.AddInterfaceImplementation(i);
+			}
 
-            // Implement the interface, including properties and events
-            builder.AddInterfaceImplementation(typeof(T));
-            if (options.AdditionalInterfaces != null)
-            {
-                foreach (var i in options.AdditionalInterfaces)
-                {
-                    builder.AddInterfaceImplementation(i);
-                }
-            }
-
-            var type = builder.CreateType();
+			var type = builder.CreateTypeInfo();
 
 #if (DEBUG_PROXYBUILDER)
 			module.CreateGlobalFunctions();
 			_assembly.Save("debug.dll");
 #endif
 
-            return (T)Activator.CreateInstance(type, new object[] { invoker });
-        }
+			return (T)Activator.CreateInstance(type, new object[] { invoker });
+		}
 
-        private static void BuildConstructor(TypeBuilder type, FieldBuilder invokerField, ProxyOptions options)
+		private static void ValidateType<T>()
 		{
-			var builder = type.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, new Type[] { typeof(InvokeHandler) });
+			if (!typeof(T).IsInterface)
+				throw new InvalidOperationException("Cannot create a proxy for non-interface type " + typeof(T).Name);
+
+			if (typeof(T).IsNotPublic)
+				throw new InvalidOperationException("Cannot create a proxy for non-public interface " + typeof(T).Name);
+		}
+
+		private static void BuildConstructor(TypeBuilder type, FieldBuilder invokerField, ProxyOptions options, Type invokerType)
+		{
+			var builder = type.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, new Type[] { invokerType });
 
 			ILGenerator generator = builder.GetILGenerator();
 
 			// base()
 			generator.Emit(OpCodes.Ldarg_0);
-            if (options.BaseClass == null)
+            if (options?.BaseClass == null)
                 generator.Emit(OpCodes.Call, _objectConstructor);
             else
             {
-                var constructor = options.BaseClass.GetConstructor(new Type[0]);
+                var constructor = options.BaseClass.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public, null, new Type[0], null);
                 if (constructor == null)
                     throw new Exception("The base class must have a constructor that takes no arguments.");
                 generator.Emit(OpCodes.Call, constructor);
@@ -141,7 +169,7 @@ namespace Digithought.Framework
 			generator.Emit(OpCodes.Ret);
 		}
 
-		private static void BuildMethodInvoker(TypeBuilder type, FieldBuilder invokerField, MethodInfo method)
+		private static void BuildMethodInvoker(TypeBuilder type, FieldBuilder invokerField, MethodInfo method, bool isAdvanced)
 		{
 			var builder = type.DefineMethod(method.Name, method.Attributes & ~MethodAttributes.Abstract, method.ReturnType, method.GetParameters().Select(p => p.ParameterType).ToArray());
 
@@ -161,6 +189,10 @@ namespace Digithought.Framework
 			generator.Emit(OpCodes.Call, _methodGetMethodFromHandle);
 			generator.Emit(OpCodes.Castclass, typeof(MethodInfo));
 
+			// Push instance
+			if (isAdvanced)
+				generator.Emit(OpCodes.Ldarg_0);
+
 			// Push parameter array
 			generator.Emit(OpCodes.Ldc_I4, parameters.Length);
 			generator.Emit(OpCodes.Newarr, typeof(object));
@@ -179,7 +211,10 @@ namespace Digithought.Framework
 			}
 
 			// Make the call
-			generator.Emit(OpCodes.Call, _invokeHandlerInvoke);
+			if (isAdvanced)
+				generator.Emit(OpCodes.Call, _advancedInvokeHandlerInvoke);
+			else
+				generator.Emit(OpCodes.Call, _invokeHandlerInvoke);
 
 			if (builder.ReturnType == typeof(void))
 			{
@@ -225,4 +260,5 @@ namespace Digithought.Framework
 	}
 
 	public delegate object InvokeHandler(MethodInfo method, params object[] parameters);
+	public delegate object AdvancedInvokeHandler(MethodInfo method, object instance, params object[] parameters);
 }

@@ -189,18 +189,23 @@ namespace WeedebudNet.Tests
 		{
 		}
 
+		public interface IAdvancedInvoker
+		{
+			object Invoke(MethodInfo method, object instance, params object[] parameters);
+		}
+
 		[TestMethod]
 		public void InheritedInvocationTest()
 		{
 			var mockBase = new Mock<SimpleBase>();
 			mockBase.Setup(mock => mock.BaseMethod()).Verifiable();
 
-			var mockInvoker = new Mock<IInvoker>();
-			mockInvoker.Setup(mock => mock.Invoke(It.Is<MethodInfo>(m => m == typeof(SimpleBase).GetMethod("BaseMethod"))))
+			var mockInvoker = new Mock<IAdvancedInvoker>();
+			mockInvoker.Setup(mock => mock.Invoke(It.Is<MethodInfo>(m => m == typeof(SimpleBase).GetMethod("BaseMethod")), It.Is<object>(i => i is ISimple)))
 				.Returns(null);
 			var invoker = mockInvoker.Object;
 
-			var proxy = ProxyBuilder.Create<ISimple>(invoker.Invoke, new ProxyOptions { BaseClass = typeof(SimpleBase) });
+			var proxy = ProxyBuilder.CreateAdvanced<ISimple>(invoker.Invoke, new ProxyOptions { BaseClass = typeof(SimpleBase) });
 			((SimpleBase)proxy).BaseMethod();
 
 			mockInvoker.Verify();
@@ -243,12 +248,12 @@ namespace WeedebudNet.Tests
             var mockBase = new Mock<ImplementingBase>();
             mockBase.Setup(mock => mock.OtherMethod()).Verifiable();
 
-            var mockInvoker = new Mock<IInvoker>();
-            mockInvoker.Setup(mock => mock.Invoke(It.IsAny<MethodInfo>(), It.IsAny<object[]>()))
+            var mockInvoker = new Mock<IAdvancedInvoker>();
+            mockInvoker.Setup(mock => mock.Invoke(It.IsAny<MethodInfo>(), It.Is<object>(i => i is ISimple), It.IsAny<object[]>()))
                 .Throws(new Exception("Proxy's Invoke for OtherMethod shouldn't be called."));
             var invoker = mockInvoker.Object;
 
-            var proxy = ProxyBuilder.Create<IOther>(invoker.Invoke, new ProxyOptions { BaseClass = typeof(ImplementingBase) });
+            var proxy = ProxyBuilder.CreateAdvanced<IOther>(invoker.Invoke, new ProxyOptions { BaseClass = typeof(ImplementingBase) });
             proxy.OtherMethod();
 
             mockInvoker.Verify();
@@ -263,7 +268,7 @@ namespace WeedebudNet.Tests
         {
             public int X;
 
-            public BaseWithConstructor()
+            protected BaseWithConstructor()
             {
                 X = 5;
             }
@@ -274,10 +279,10 @@ namespace WeedebudNet.Tests
         {
             var mockBase = new Mock<BaseWithConstructor>();
 
-            var mockInvoker = new Mock<IInvoker>();
+            var mockInvoker = new Mock<IAdvancedInvoker>();
             var invoker = mockInvoker.Object;
 
-            var proxy = ProxyBuilder.Create<ISimple>(invoker.Invoke, new ProxyOptions { BaseClass = typeof(BaseWithConstructor) });
+            var proxy = ProxyBuilder.CreateAdvanced<ISimple>(invoker.Invoke, new ProxyOptions { BaseClass = typeof(BaseWithConstructor) });
             Assert.AreEqual(5, ((BaseWithConstructor)proxy).X);
 
             mockInvoker.Verify();
@@ -286,13 +291,13 @@ namespace WeedebudNet.Tests
         [TestMethod]
 		public void MultipleInterfacesTest()
 		{
-			var mockInvoker = new Mock<IInvoker>();
-			mockInvoker.Setup(mock => mock.Invoke(It.Is<MethodInfo>(m => m.Name == "OtherMethod")))
+			var mockInvoker = new Mock<IAdvancedInvoker>();
+			mockInvoker.Setup(mock => mock.Invoke(It.Is<MethodInfo>(m => m.Name == "OtherMethod"), It.Is<object>(i => i is ISimple)))
 				.Returns(null)
 				.Verifiable();
 
 			var invoker = mockInvoker.Object;
-			var proxy = ProxyBuilder.Create<ISimple>(invoker.Invoke, new ProxyOptions { AdditionalInterfaces = new[] { typeof(IOther) } });
+			var proxy = ProxyBuilder.CreateAdvanced<ISimple>(invoker.Invoke, new ProxyOptions { AdditionalInterfaces = new[] { typeof(IOther) } });
 			((IOther)proxy).OtherMethod();
 
 			mockInvoker.Verify();

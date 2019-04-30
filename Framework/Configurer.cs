@@ -14,8 +14,13 @@ namespace Digithought.Framework
 
 		public static T Get<T>(T defaultConfig, string name)
 		{
-			string config = null;
 			var fileName = System.Reflection.Assembly.GetEntryAssembly().Location + "." + name + ".config";
+			return GetFrom(defaultConfig, fileName);
+		}
+
+		public static T GetFrom<T>(T defaultConfig, string fileName)
+		{
+			string config = null;
 			try
 			{
 				if (File.Exists(fileName))
@@ -23,14 +28,15 @@ namespace Digithought.Framework
 					config = File.ReadAllText(fileName);
 					var copy = defaultConfig.Clone();
 					var errorLoading = false;
-					var jsonSettings = new Newtonsoft.Json.JsonSerializerSettings 
-						{ 
-							Error = (o, e) => { 
-								errorLoading = true;
-								Logging.Error(e.ErrorContext.Error);
-							}, 
-							ObjectCreationHandling = Newtonsoft.Json.ObjectCreationHandling.Reuse 
-						};
+					var jsonSettings = new Newtonsoft.Json.JsonSerializerSettings
+					{
+						Error = (o, e) =>
+						{
+							errorLoading = true;
+							Logging.Error(e.ErrorContext.Error);
+						},
+						ObjectCreationHandling = Newtonsoft.Json.ObjectCreationHandling.Reuse
+					};
 					Newtonsoft.Json.JsonConvert.PopulateObject(config, copy, jsonSettings);
 					if (errorLoading)
 						try
@@ -57,11 +63,13 @@ namespace Digithought.Framework
 			finally
 			{
 				#if (TRACE_CONFIGURATION)
-				Logging.Trace("Configuration", name + ": \t" + config);
+				Logging.Trace("Configuration", $"{Path.GetFileNameWithoutExtension(fileName)}: \t{config}");
 				#endif
 			}
 			return defaultConfig;
 		}
+
+		public static object Get(object @default) => throw new NotImplementedException();
 
 		/// <summary> Copies values from the root of the configuration object to any sub-configuration objects which have the same property names but no value. </summary>
 		public static void ApplyInherited(object config)
