@@ -4,7 +4,7 @@ using Moq;
 using Digithought.Framework;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace WeedebudNet.Tests
+namespace Digithought.Framework.Tests
 {
 	[TestClass]
 	public class ProxyBuilderTests
