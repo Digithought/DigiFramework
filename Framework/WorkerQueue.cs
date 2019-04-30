@@ -128,5 +128,12 @@ namespace Digithought.Framework
 				_asyncQueue.Clear();
 			}
 		}
+
+		public void Wait()
+		{
+			var e = new ManualResetEvent(false);
+			Queue(() => e.Set());
+			e.WaitOne();
+		}
 	}
 }
