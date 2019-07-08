@@ -183,3 +183,4 @@ UpgradeLog*.htm
 FakesAssemblies/
 /Backup_of_DigiFramework Icon.cdr
 /.vs
+*.bak
