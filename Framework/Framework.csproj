@@ -6,17 +6,17 @@
 		<RootNamespace>Digithought.Framework</RootNamespace>
 	</PropertyGroup>
 	<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-		<DefineConstants>TRACE;DEBUG;FRAMEWORK_TRACING;TRACE_ACTS;TRACE_CONFIGURATION</DefineConstants>
+		<DefineConstants>TRACE;DEBUG;FRAMEWORK_TRACING;TRACE_ACTS;TRACE_CONFIGURATION;FRAMEWORK_DATALOGGING</DefineConstants>
 	</PropertyGroup>
 	<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-		<DefineConstants>TRACE;FRAMEWORK_TRACING;TRACE_ACTS;TRACE_CONFIGURATION</DefineConstants>
+		<DefineConstants>TRACE;FRAMEWORK_TRACING;TRACE_ACTS;TRACE_CONFIGURATION;FRAMEWORK_DATALOGGING</DefineConstants>
 	</PropertyGroup>
 	<ItemGroup>
 	  <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
 	  <PackageReference Include="System.Reflection.Emit" Version="4.3.0" />
 	</ItemGroup>
 	<PropertyGroup>
-		<Version>1.0.11</Version>
+		<Version>1.0.12</Version>
 		<Authors>Nathan Allan</Authors>
 		<Company>Digithought</Company>
 		<Product>DigiFramework</Product>
