@@ -36,8 +36,7 @@ namespace Digithought.Framework
 				System.Diagnostics.Trace.WriteLine(DateTime.Now.ToString("o") + ": " + message);
 
 				var handler = LogTrace;	// Capture
-				if (handler != null)
-					handler(category, message);
+				handler?.Invoke(category, message);
 			}
 		}
 	}
