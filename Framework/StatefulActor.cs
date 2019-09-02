@@ -108,9 +108,7 @@ namespace Digithought.Framework
 			{
 				if (commandFound && command.Trigger.HasValue)
 				{
-					#if (TRACE_ACTS)
-					Logging.Trace(FrameworkLoggingCategory.Acts, "Call to " + GetType().Name + "[" + GetHashCode() + "]." + method.Name + " - triggering command: " + command.Trigger.Value);
-					#endif
+					TraceMethod(method, command);
 					Fire(command.Trigger.Value);
 				}
 				else
@@ -119,6 +117,16 @@ namespace Digithought.Framework
 			else
 				StateException(new FrameworkException(String.Format("Invalid command '{0}' against {1} [{2}] when in state {3}.", method.Name, GetType().Name, GetHashCode(), State)));
 		}
+
+		[System.Diagnostics.Conditional("TRACE_ACTS")]
+		private void TraceMethod(MethodInfo method, Command<TState, TTrigger> command)
+		{
+			Logging.Trace(IsAccessor(method) ? FrameworkLoggingCategory.Accessors : FrameworkLoggingCategory.Acts, "Call to " + GetType().Name + "[" + GetHashCode() + "]." + method.Name + " - triggering command: " + command.Trigger.Value);
+		}
+
+		/// <summary> Accessors are defined as adds and removes from event handlers, and property getters.  Note that property getters could potentially have side effects or be important for tracing, so thise level can be turned on using the Accessors category. </summary>
+		private bool IsAccessor(MethodInfo method) 
+			=> method.IsSpecialName && (method.Name.StartsWith("add_") || method.Name.StartsWith("remove_") || method.Name.StartsWith("get_"));
 
 		protected abstract StateMachine<TState, TTrigger> InitializeStates();
 		

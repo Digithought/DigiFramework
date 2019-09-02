@@ -16,13 +16,13 @@
 	  <PackageReference Include="System.Reflection.Emit" Version="4.3.0" />
 	</ItemGroup>
 	<PropertyGroup>
-		<Version>1.0.12</Version>
+		<Version>1.0.13</Version>
 		<Authors>Nathan Allan</Authors>
 		<Company>Digithought</Company>
 		<Product>DigiFramework</Product>
 		<PackageId>DigiFramework</PackageId>
-		<AssemblyVersion>1.0.11.0</AssemblyVersion>
-		<FileVersion>1.0.11.0</FileVersion>
+		<AssemblyVersion>1.0.13.0</AssemblyVersion>
+		<FileVersion>1.0.13.0</FileVersion>
 		<NeutralLanguage>en</NeutralLanguage>
 		<Description>Light-weight actor and state machine framework.  Ideal for robotics, machine control, network communication, and more.</Description>
 		<Copyright>Copyright © 2019 Digithought LLC</Copyright>
@@ -30,5 +30,6 @@
 		<PackageIconUrl>https://raw.githubusercontent.com/Digithought/DigiFramework/master/DigiFramework%20Icon.png</PackageIconUrl>
 		<PackageLicenseUrl>http://opensource.org/licenses/Apache-2.0</PackageLicenseUrl>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<PackageReleaseNotes>Added "Accessors" trace logging category to enable filtering out of event add_, remove_ and property get_ calls.</PackageReleaseNotes>
 	</PropertyGroup>
 </Project>
