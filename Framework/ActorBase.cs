@@ -94,11 +94,10 @@ namespace Digithought.Framework
         protected virtual void NotifyOfError(Exception e)
         {
             Logging.Error(e);
-            if (ErrorOccurred != null)
-                ErrorOccurred(e);
-        }
+			ErrorOccurred?.Invoke(e);
+		}
 
-        protected virtual void InvokeHandlingErrors(Action call)
+        protected virtual void InvokeHandlingErrors(Action call, Func<string> getContext = null)
 		{
 			try
 			{
@@ -106,6 +105,8 @@ namespace Digithought.Framework
 			}
 			catch (Exception e)
 			{
+				if (getContext != null)
+					NotifyOfError(new Exception("Error invoking: " + getContext()));
 				HandleException(e);
 			}
 		}
@@ -120,15 +121,24 @@ namespace Digithought.Framework
 			Logging.Trace(FrameworkLoggingCategory.Acts, "Call to " + GetType().Name + "[" + GetHashCode() + "]." + method.Name + "(" + String.Join(",", parameters.Select(x => x ?? "")) + ")");
 			#endif
 
+			string GetContext()
+				=> method.DeclaringType.Name + "." + method.Name;
+
 			object result = null;
 			Action work;
 			var voidReturn = method.ReturnType == typeof(void);
 			if (voidReturn)
-				work = () => InvokeHandlingErrors(() => ReflectionUtility.UnravelTargetException(() => InnerInvoke(() => method.Invoke(this, parameters), method, parameters)));
+				work = () => InvokeHandlingErrors(
+					() => ReflectionUtility.UnravelTargetException(() => InnerInvoke(() => method.Invoke(this, parameters), method, parameters)),
+					GetContext
+				);
 			else
 			{
 				result = GetDefaultReturnValue(method);
-				work = () => InvokeHandlingErrors(() => ReflectionUtility.UnravelTargetException(() => InnerInvoke(() => { result = method.Invoke(this, parameters); }, method, parameters)));
+				work = () => InvokeHandlingErrors(
+					() => ReflectionUtility.UnravelTargetException(() => InnerInvoke(() => { result = method.Invoke(this, parameters); }, method, parameters)),
+					GetContext
+				);
 			}
 			// Perform synchronously or asynchronously depending on whether the current thread is the actor's
 			if (_worker.CurrentThreadOn())

@@ -4,6 +4,19 @@
 		<TargetFramework>netstandard2.0</TargetFramework>
 		<AssemblyName>Digithought.Framework</AssemblyName>
 		<RootNamespace>Digithought.Framework</RootNamespace>
+		<!-- Optional: Publish the repository URL in the built .nupkg (in the NuSpec <Repository> element) -->
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+
+		<!-- Optional: Embed source files that are not tracked by the source control manager in the PDB -->
+		<EmbedUntrackedSources>true</EmbedUntrackedSources>
+
+		<!-- Optional: Build symbol package (.snupkg) to distribute the PDB containing Source Link -->
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+	</PropertyGroup>
+	<PropertyGroup>
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 	</PropertyGroup>
 	<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
 		<DefineConstants>TRACE;DEBUG;FRAMEWORK_TRACING;TRACE_ACTS;TRACE_CONFIGURATION;FRAMEWORK_DATALOGGING</DefineConstants>
@@ -13,23 +26,25 @@
 	</PropertyGroup>
 	<ItemGroup>
 	  <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
-	  <PackageReference Include="System.Reflection.Emit" Version="4.3.0" />
+	  <PackageReference Include="System.Reflection.Emit" Version="4.6.0" />
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-*" PrivateAssets="All" />
 	</ItemGroup>
 	<PropertyGroup>
-		<Version>1.0.13</Version>
+		<Version>1.0.18</Version>
 		<Authors>Nathan Allan</Authors>
 		<Company>Digithought</Company>
 		<Product>DigiFramework</Product>
 		<PackageId>DigiFramework</PackageId>
-		<AssemblyVersion>1.0.13.0</AssemblyVersion>
-		<FileVersion>1.0.13.0</FileVersion>
+		<AssemblyVersion>1.0.18.0</AssemblyVersion>
+		<FileVersion>1.0.18.0</FileVersion>
 		<NeutralLanguage>en</NeutralLanguage>
 		<Description>Light-weight actor and state machine framework.  Ideal for robotics, machine control, network communication, and more.</Description>
 		<Copyright>Copyright © 2019 Digithought LLC</Copyright>
 		<PackageProjectUrl>https://github.com/Digithought/DigiFramework</PackageProjectUrl>
 		<PackageIconUrl>https://raw.githubusercontent.com/Digithought/DigiFramework/master/DigiFramework%20Icon.png</PackageIconUrl>
-		<PackageLicenseUrl>http://opensource.org/licenses/Apache-2.0</PackageLicenseUrl>
+		<PackageLicenseUrl></PackageLicenseUrl>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<PackageReleaseNotes>Added "Accessors" trace logging category to enable filtering out of event add_, remove_ and property get_ calls.</PackageReleaseNotes>
+		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 	</PropertyGroup>
 </Project>
