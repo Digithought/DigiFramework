@@ -82,8 +82,8 @@ namespace Digithought.Framework
 			}
 			catch (Exception secondary)
 			{
-				// Don't let secondary problem in error handling propagate
-				Trace.WriteLine("Error handling exception: " + secondary.Message);
+				// Don't let secondary problem in error handling propagate. Don't write to trace - could recurse
+				Debug.WriteLine("Error handling exception: " + secondary.Message);
 				#if (DEBUG)
 				// Error handling should not be throwing exceptions... fix the problem
 				Debugger.Break();

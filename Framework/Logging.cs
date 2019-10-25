@@ -12,10 +12,7 @@ namespace Digithought.Framework
 		public static void Error(Exception e)
 		{
 			var handler = LogError;	// Capture
-			if (handler != null)
-				handler(e);
-			else
-				System.Diagnostics.Trace.WriteLine(DateTime.Now.ToString("o") + ": " + e.ToString());
+			handler?.Invoke(e);
 		}
 
 		/// <summary> Logs a trace message. </summary>
@@ -33,8 +30,6 @@ namespace Digithought.Framework
 					&& (mask == null || mask.IsMatch(category))
 			)
 			{
-				System.Diagnostics.Trace.WriteLine(DateTime.Now.ToString("o") + ": " + message);
-
 				var handler = LogTrace;	// Capture
 				handler?.Invoke(category, message);
 			}
