@@ -292,9 +292,7 @@ namespace Digithought.Framework
 		/// current state (or optionally given super-state). </summary>
 		protected void WatchOtherAndUpdate<OA, OS, OT>(IStatefulActor<OA, OS, OT> other, TState? whileIn = null)
 			where OS : struct
-		{
-			WatchOtherWhileInState(other, (s, t) => true, UpdateStates, whileIn);
-		}
+			=> WatchOtherWhileInState(other, (s, t) => true, UpdateStates, whileIn);
 
 		/// <summary> Checks to see if the current states transition's conditions are satisfied 
 		/// in response to any state change in the given other actor, but only while in the 
@@ -302,21 +300,27 @@ namespace Digithought.Framework
 		/// fault state, an exception is thrown for this actor. </summary>
 		protected void WatchOtherAndUpdate<OA, OS, OT>(IStatefulActor<OA, OS, OT> other, OS errorState, TState? whileIn = null)
 			where OS : struct
-		{
-			WatchOtherWhileInState
+			=> WatchOtherAndUpdate(other, new OS[] { errorState }, whileIn);
+
+		/// <summary> Checks to see if the current states transition's conditions are satisfied 
+		/// in response to any state change in the given other actor, but only while in the 
+		/// current state (or optionally given super-state).  If the other actor goes to any given
+		/// fault state, an exception is thrown for this actor. </summary>
+		protected void WatchOtherAndUpdate<OA, OS, OT>(IStatefulActor<OA, OS, OT> other, OS[] errorStates, TState? whileIn = null)
+			where OS : struct
+			=> WatchOtherWhileInState
 			(
-				other, 
-				(s, t) => true, 
+				other,
+				(s, t) => true,
 				() =>
 				{
-					if (other.InState(errorState))
-						throw new FrameworkWatchedStateException(other.GetType().Name + " unexpectedly went to state " + errorState, other);
+					if (errorStates.Any(es => other.InState(es)))
+						throw new FrameworkWatchedStateException(other.GetType().Name + " unexpectedly went to state " + other.State, other);
 					else
 						UpdateStates();
-				}, 
+				},
 				whileIn
 			);
-		}
 
 		/// <summary> Continues with a given delegate once the given task completes, but only 
 		/// if still in the current state (or optionally given super-state). </summary>

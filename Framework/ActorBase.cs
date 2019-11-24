@@ -213,7 +213,7 @@ namespace Digithought.Framework
                     else
                         try
                         {
-					        Act(() => action());
+					        Act(action);
 				        }
 				        catch (Exception e)
 				        {
