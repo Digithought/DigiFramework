@@ -30,21 +30,21 @@
 		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-*" PrivateAssets="All" />
 	</ItemGroup>
 	<PropertyGroup>
-		<Version>1.0.20</Version>
+		<Version>1.0.21</Version>
 		<Authors>Nathan Allan</Authors>
 		<Company>Digithought</Company>
 		<Product>DigiFramework</Product>
 		<PackageId>DigiFramework</PackageId>
-		<AssemblyVersion>1.0.20.0</AssemblyVersion>
-		<FileVersion>1.0.20.0</FileVersion>
+		<AssemblyVersion>1.0.21.0</AssemblyVersion>
+		<FileVersion>1.0.21.0</FileVersion>
 		<NeutralLanguage>en</NeutralLanguage>
 		<Description>Light-weight actor and state machine framework.  Ideal for robotics, machine control, network communication, and more.</Description>
-		<Copyright>Copyright © 2019 Digithought LLC</Copyright>
+		<Copyright>Copyright © 2020 Digithought LLC</Copyright>
 		<PackageProjectUrl>https://github.com/Digithought/DigiFramework</PackageProjectUrl>
 		<PackageIconUrl>https://raw.githubusercontent.com/Digithought/DigiFramework/master/DigiFramework%20Icon.png</PackageIconUrl>
 		<PackageLicenseUrl></PackageLicenseUrl>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<PackageReleaseNotes>Added overload of WatchOtherAndUpdate that takes a list of error states.</PackageReleaseNotes>
+		<PackageReleaseNotes>No longer save out default config file if it doesn't exist.  Was a really bad idea and I'm embarrassed that I haven't fixed it sooner.</PackageReleaseNotes>
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 	</PropertyGroup>
 </Project>

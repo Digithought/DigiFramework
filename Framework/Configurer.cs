@@ -50,10 +50,6 @@ namespace Digithought.Framework
 						}
 					return copy;
 				}
-				else
-				{
-					SaveObject(defaultConfig, fileName);
-				}
 			}
 			catch (Exception e)
 			{
