@@ -6,5 +6,6 @@
 		TState State { get; }
 		event StateMachine<TState, TTrigger>.StateChangedHandler StateChanged;
 		bool InState(TState state);
+		bool StateIn(TState state, TState target);
 	}
 }

@@ -30,13 +30,13 @@
 		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-*" PrivateAssets="All" />
 	</ItemGroup>
 	<PropertyGroup>
-		<Version>1.0.21</Version>
+		<Version>1.0.26</Version>
 		<Authors>Nathan Allan</Authors>
 		<Company>Digithought</Company>
 		<Product>DigiFramework</Product>
 		<PackageId>DigiFramework</PackageId>
-		<AssemblyVersion>1.0.21.0</AssemblyVersion>
-		<FileVersion>1.0.21.0</FileVersion>
+		<AssemblyVersion>1.0.26.0</AssemblyVersion>
+		<FileVersion>1.0.26.0</FileVersion>
 		<NeutralLanguage>en</NeutralLanguage>
 		<Description>Light-weight actor and state machine framework.  Ideal for robotics, machine control, network communication, and more.</Description>
 		<Copyright>Copyright © 2020 Digithought LLC</Copyright>
@@ -44,7 +44,7 @@
 		<PackageIconUrl>https://raw.githubusercontent.com/Digithought/DigiFramework/master/DigiFramework%20Icon.png</PackageIconUrl>
 		<PackageLicenseUrl></PackageLicenseUrl>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<PackageReleaseNotes>No longer save out default config file if it doesn't exist.  Was a really bad idea and I'm embarrassed that I haven't fixed it sooner.</PackageReleaseNotes>
+		<PackageReleaseNotes>Deferred trigger firing prevented from further queueing.  Ensure on WaitForOtherWhileInState that the callback isn't executed more than once when first hooking.  Added StateIn to StatefulActor.</PackageReleaseNotes>
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 	</PropertyGroup>
 </Project>

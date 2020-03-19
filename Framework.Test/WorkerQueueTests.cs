@@ -17,11 +17,10 @@ namespace Digithought.Framework.Tests
 		{
 			var inCheck = false;
 			var outCheck = false;
-			var blocker = new ManualResetEvent(false);
 			var worker = new WorkerQueue();
 
-			worker.Queue(() => { inCheck = worker.CurrentThreadOn(); blocker.Set(); });
-			blocker.WaitOne();
+			worker.Queue(() => { inCheck = worker.CurrentThreadOn(); });
+			worker.Wait();
 
 			outCheck = worker.CurrentThreadOn();
 
@@ -33,7 +32,6 @@ namespace Digithought.Framework.Tests
 		public void QueueTest()
 		{
 			var sequence = 0;
-			var blocker = new ManualResetEvent(false);
 			var worker = new WorkerQueue();
 
 			worker.Queue(() => { Assert.AreEqual(0, sequence); Thread.Sleep(100); ++sequence; });
@@ -41,8 +39,8 @@ namespace Digithought.Framework.Tests
 			worker.Queue(() => { Assert.AreEqual(2, sequence); Thread.Sleep(0); ++sequence; });
 			worker.Queue(() => { Assert.AreEqual(3, sequence); Thread.Sleep(50); ++sequence; });
 			worker.Queue(() => { Assert.AreEqual(4, sequence); Thread.Sleep(150); ++sequence; });
-			worker.Queue(() => { Assert.AreEqual(5, sequence); Thread.Sleep(1); ++sequence; blocker.Set(); });
-			blocker.WaitOne();
+			worker.Queue(() => { Assert.AreEqual(5, sequence); Thread.Sleep(1); ++sequence; });
+			worker.Wait();
 
 			Assert.AreEqual(6, sequence);
 		}

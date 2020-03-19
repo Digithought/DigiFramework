@@ -41,16 +41,18 @@ namespace Digithought.Framework
 		}
 
 		/// <summary> Tests to see if the current state is the given state, or some sub-state thereof. </summary>
-		public bool InState(TState state)
-		{
-			return _states.InState(state);
-		}
+		public bool InState(TState state) 
+			=> _states.InState(state);
+
+		/// <summary> Returns whether the given state is equal to, or a sub-state of the given target state. </summary>
+		public bool StateIn(TState state, TState target)
+			=> _states.StateIn(state, target);
 
 		/// <summary> Fires the given trigger against the state machine, delayed if already transitioning. </summary>
 		protected void Fire(TTrigger trigger)
 		{
 			if (_states.Transitioning)
-				Act(() => Fire(trigger));
+				Act(() => _states.Fire(trigger));
 			else
 				_states.Fire(trigger);
 		}
@@ -121,12 +123,8 @@ namespace Digithought.Framework
 		[System.Diagnostics.Conditional("TRACE_ACTS")]
 		private void TraceMethod(MethodInfo method, Command<TState, TTrigger> command)
 		{
-			Logging.Trace(IsAccessor(method) ? FrameworkLoggingCategory.Accessors : FrameworkLoggingCategory.Acts, "Call to " + GetType().Name + "[" + GetHashCode() + "]." + method.Name + " - triggering command: " + command.Trigger.Value);
+			Logging.Trace(FrameworkLoggingCategory.Acts, "Call to " + GetType().Name + "[" + GetHashCode() + "]." + method.Name + " - triggering command: " + command.Trigger.Value);
 		}
-
-		/// <summary> Accessors are defined as adds and removes from event handlers, and property getters.  Note that property getters could potentially have side effects or be important for tracing, so thise level can be turned on using the Accessors category. </summary>
-		private bool IsAccessor(MethodInfo method) 
-			=> method.IsSpecialName && (method.Name.StartsWith("add_") || method.Name.StartsWith("remove_") || method.Name.StartsWith("get_"));
 
 		protected abstract StateMachine<TState, TTrigger> InitializeStates();
 		
@@ -263,14 +261,14 @@ namespace Digithought.Framework
 		/// <summary> Checks a given condition whenever the given other actor changes state; if 
 		/// the condition passes, a given action is invoked, but all of this only while in the 
 		/// current state (or given super-state). </summary>
-		/// <remarks> If the condition is already met, the callback is invoked immediately with null transition information. </remarks>
+		/// <remarks> If the condition is already met, the callback is invoked immediately (but not in this call) with null transition information. </remarks>
 		protected void WatchOtherWhileInState<OA, OS, OT>(IStatefulActor<OA, OS, OT> other, WatchOtherCondition<OS, OT> condition, Action action, TState? whileIn = null)
 			where OS : struct
 		{
 			var inState = whileIn ?? State;
 			if (InState(inState))
 			{
-				StateMachine<OS, OT>.StateChangedHandler changedHandler = (OS oldState, StateMachine<OS, OT>.Transition transition) =>
+				void changedHandler(OS oldState, StateMachine<OS, OT>.Transition transition)
 				{
 					Act(() =>
 						{
@@ -278,12 +276,18 @@ namespace Digithought.Framework
 								action();
 						}
 					);
-				};
-				other.StateChanged += changedHandler;
+				}
+				other.Atomically(_ =>
+				{
+					var otherState = other.State;
+					other.StateChanged += changedHandler;
+					Act(() =>
+					{
+						if (InState(inState) && condition(otherState, null))
+							action();
+					});
+				});
 				WatchState(inState, () => { other.StateChanged -= changedHandler; });
-
-				if (condition(other.State, null))
-					action();
 			}
 		}
 

@@ -118,7 +118,10 @@ namespace Digithought.Framework
 			#if (TRACE_ACTS)
 			// REPLACED FOR PERFORMANCE: Newtonsoft.Json.JsonConvert.SerializeObject(parameters));
 			// Use this rather than ToString() if more detailed parameter logging is needed
-			Logging.Trace(FrameworkLoggingCategory.Acts, "Call to " + GetType().Name + "[" + GetHashCode() + "]." + method.Name + "(" + String.Join(",", parameters.Select(x => x ?? "")) + ")");
+			Logging.Trace(
+				IsAccessor(method) ? FrameworkLoggingCategory.Accessors : FrameworkLoggingCategory.Acts, 
+				$"Call to {GetType().Name}[{GetHashCode()}].{method.Name}({String.Join(",", parameters.Select(x => x ?? ""))})"
+			);
 			#endif
 
 			string GetContext()
@@ -222,5 +225,9 @@ namespace Digithought.Framework
 			    }
 			);
 		}
+
+		/// <summary> Accessors are defined as adds and removes from event handlers, and property getters.  Note that property getters could potentially have side effects or be important for tracing, so thise level can be turned on using the Accessors category. </summary>
+		private bool IsAccessor(MethodInfo method)
+			=> method.IsSpecialName && (method.Name.StartsWith("add_") || method.Name.StartsWith("remove_") || method.Name.StartsWith("get_"));
 	}
 }
