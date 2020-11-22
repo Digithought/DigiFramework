@@ -129,6 +129,19 @@ namespace Digithought.Framework
 			}
 		}
 
+		/// <summary> The number of enqueued requests. </summary>
+		public int Count
+		{
+			get
+			{
+				lock (_asyncQueue)
+				{
+					return _asyncQueue.Count;
+				}
+			}
+		}
+
+		/// <summary> Blocks until all requests are complete. </summary>
 		public void Wait()
 		{
 			var e = new ManualResetEvent(false);
