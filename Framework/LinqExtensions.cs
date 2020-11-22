@@ -189,6 +189,8 @@ namespace Digithought.Framework
 			return bestIndex;
 		}
 
+		/// <summary> Gets the item value having the highest value of the given evaluation function.  In other words, rather than the standard Max function that returns the highest of the evaluations, this returns the item which has that value. </summary>
+		/// <remarks> This is optimized for an evaluation function that returns doubles. </remarks>
 		public static T ValueOfMax<T>(this IEnumerable<T> items, Func<T, double> eval, T initialItem = default(T))
 		{
 			var bestItem = initialItem;
@@ -198,6 +200,26 @@ namespace Digithought.Framework
 				var value = eval(item);
 				if (value > bestValue)
 				{
+					bestItem = item;
+					bestValue = value;
+				}
+			}
+			return bestItem;
+		}
+
+		/// <summary> Gets the item value having the highest value of the given evaluation function.  In other words, rather than the standard Max function that returns the highest of the evaluations, this returns the item which has that value. </summary>
+		public static T ValueOfMax<T, I>(this IEnumerable<T> items, Func<T, I> eval, T defaultItem = default(T))
+			where I: IComparable
+		{
+			var bestItem = defaultItem;
+			bool bestValueSet = false;
+			I bestValue = default;
+			foreach (var item in items)
+			{
+				var value = eval(item);
+				if (!bestValueSet || value.CompareTo(bestValue) > 0)
+				{
+					bestValueSet = true;
 					bestItem = item;
 					bestValue = value;
 				}
