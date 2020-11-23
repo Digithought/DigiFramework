@@ -109,7 +109,7 @@ namespace Digithought.Framework
 					while (state != null)
 					{
 						var transition = state.Transitions
-							.Where(t => t.Condition == null && t.Trigger.Equals(trigger))
+							.Where(t => t.Trigger.Equals(trigger))
 							.FirstOrDefault();
 						if (transition != null)
 						{

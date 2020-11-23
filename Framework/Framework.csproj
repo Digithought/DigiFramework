@@ -30,13 +30,13 @@
 		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-*" PrivateAssets="All" />
 	</ItemGroup>
 	<PropertyGroup>
-		<Version>1.0.28</Version>
+		<Version>1.1.0</Version>
 		<Authors>Nathan Allan</Authors>
 		<Company>Digithought</Company>
 		<Product>DigiFramework</Product>
 		<PackageId>DigiFramework</PackageId>
-		<AssemblyVersion>1.0.28.0</AssemblyVersion>
-		<FileVersion>1.0.28.0</FileVersion>
+		<AssemblyVersion>1.1.0.0</AssemblyVersion>
+		<FileVersion>1.1.0.0</FileVersion>
 		<NeutralLanguage>en</NeutralLanguage>
 		<Description>Light-weight actor and state machine framework.  Ideal for robotics, machine control, network communication, and more.</Description>
 		<Copyright>Copyright © 2020 Digithought LLC</Copyright>
@@ -44,7 +44,7 @@
 		<PackageIconUrl>https://raw.githubusercontent.com/Digithought/DigiFramework/master/DigiFramework%20Icon.png</PackageIconUrl>
 		<PackageLicenseUrl></PackageLicenseUrl>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<PackageReleaseNotes>Added Count to WorkerQueue.</PackageReleaseNotes>
+		<PackageReleaseNotes>POTENTIALLY BREAKING: Allowed for manually firing trigger even if condition isn't satisfied.  Previously, an attempt to fire a trigger (e.g. from a timeout) if a condition callback is set prevented the manual trigger from firing.  This is very unlikely to break anyone, but just in case, I updated the minor version number to reflect the potential impact.</PackageReleaseNotes>
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 	</PropertyGroup>
 </Project>
