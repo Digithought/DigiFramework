@@ -177,12 +177,17 @@ namespace Digithought.Framework
 			System.Threading.ThreadPool.QueueUserWorkItem(s => { System.Threading.Thread.Sleep(milliseconds); Act(callback); });
 		}
 
-		protected void Continue<T>(System.Threading.Tasks.Task<T> task, Action<T> action, Action canceled = null)
+		protected void Continue<T>(System.Threading.Tasks.Task<T> task, Action<T> action, Action canceled = null, Action<Exception> error = null)
 		{
 			task.ContinueWith(t =>
 				{
-                    if (t.IsFaulted)
-                        Act(() => { throw t.Exception; });
+					if (t.IsFaulted)
+						Act(() => { 
+							if (error != null) 
+								error(t.Exception); 
+							else
+								throw t.Exception; 
+						});
                     else if (t.IsCanceled)
                     {
                         if (canceled != null)
@@ -202,26 +207,24 @@ namespace Digithought.Framework
 			);
 		}
 
-		protected void Continue(System.Threading.Tasks.Task task, Action action, Action canceled = null)
+		protected void Continue(System.Threading.Tasks.Task task, Action action, Action canceled = null, Action<Exception> error = null)
 		{
 			task.ContinueWith(t =>
 			    {
                     if (t.IsFaulted)
-                        Act(() => { throw t.Exception; });
-                    else if (t.IsCanceled)
+						Act(() => {
+							if (error != null)
+								error(t.Exception);
+							else
+								throw t.Exception;
+						});
+					else if (t.IsCanceled)
                     {
                         if (canceled != null)
                             Act(canceled);
                     }
                     else
-                        try
-                        {
-					        Act(action);
-				        }
-				        catch (Exception e)
-				        {
-					        Act(() => { throw e; });
-				        }
+				        Act(action);
 			    }
 			);
 		}

@@ -328,24 +328,24 @@ namespace Digithought.Framework
 
 		/// <summary> Continues with a given delegate once the given task completes, but only 
 		/// if still in the current state (or optionally given super-state). </summary>
-		protected void ContinueWhileInState<T>(Task<T> task, Action<T> with, TState? whileIn = null)
+		protected void ContinueWhileInState<T>(Task<T> task, Action<T> with, TState? whileIn = null, Action<Exception> error = null)
 		{
 			var inState = whileIn ?? State;
 			var leftState = false;
 			WatchState(inState, () => { leftState = true; });
 			if (InState(inState))
-				Continue(task, v => { if (!leftState && InState(inState)) with(v); }, () => { throw new FrameworkException("Task canceled"); });
+				Continue(task, v => { if (!leftState && InState(inState)) with(v); }, () => { throw new FrameworkException("Task canceled"); }, error);
 		}
 
 		/// <summary> Continues with a given delegate once the given task completes, but only 
 		/// if still in the current state (or optionally given super-state). </summary>
-		protected void ContinueWhileInState(Task task, Action with, TState? whileIn = null)
+		protected void ContinueWhileInState(Task task, Action with, TState? whileIn = null, Action<Exception> error = null)
 		{
 			var inState = whileIn ?? State;
 			var leftState = false;
 			WatchState(inState, () => { leftState = true; });
 			if (InState(inState))
-				Continue(task, () => { if (!leftState && InState(inState)) with(); }, () => { throw new FrameworkException("Task canceled"); });
+				Continue(task, () => { if (!leftState && InState(inState)) with(); }, () => { throw new FrameworkException("Task canceled"); }, error);
 		}
 	}
 
