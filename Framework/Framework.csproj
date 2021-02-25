@@ -30,13 +30,13 @@
 		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-*" PrivateAssets="All" />
 	</ItemGroup>
 	<PropertyGroup>
-		<Version>1.1.1</Version>
+		<Version>1.1.2</Version>
 		<Authors>Nathan Allan</Authors>
 		<Company>Digithought</Company>
 		<Product>DigiFramework</Product>
 		<PackageId>DigiFramework</PackageId>
-		<AssemblyVersion>1.1.1.0</AssemblyVersion>
-		<FileVersion>1.1.1.0</FileVersion>
+		<AssemblyVersion>1.1.2.0</AssemblyVersion>
+		<FileVersion>1.1.2.0</FileVersion>
 		<NeutralLanguage>en</NeutralLanguage>
 		<Description>Light-weight actor and state machine framework.  Ideal for robotics, machine control, network communication, and more.</Description>
 		<Copyright>Copyright © 2021 Digithought LLC</Copyright>
@@ -44,7 +44,7 @@
 		<PackageIconUrl>https://raw.githubusercontent.com/Digithought/DigiFramework/master/DigiFramework%20Icon.png</PackageIconUrl>
 		<PackageLicenseUrl></PackageLicenseUrl>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<PackageReleaseNotes>Added ability to intercept error handling for Continue... methods.</PackageReleaseNotes>
+		<PackageReleaseNotes>Added cancellation source to ContinueWhileInState</PackageReleaseNotes>
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 	</PropertyGroup>
 </Project>
