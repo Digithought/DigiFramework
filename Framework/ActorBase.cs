@@ -106,7 +106,7 @@ namespace Digithought.Framework
 			catch (Exception e)
 			{
 				if (getContext != null)
-					NotifyOfError(new Exception("Error invoking: " + getContext()));
+					NotifyOfError(new Exception($"Error ({(e is AggregateException ae ? ae.Flatten().Message : e.Message)}) invoking: " + getContext()));
 				HandleException(e);
 			}
 		}
