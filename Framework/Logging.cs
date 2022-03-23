@@ -15,7 +15,7 @@ namespace Digithought.Framework
 			handler?.Invoke(e);
 		}
 
-		/// <summary> Logs a trace message. </summary>
+		/// <summary> Logs a trace message.  FRAMEWORK_TRACING must be defined in your compiler defines or this method call will be skipped.  </summary>
 		/// <param name="category"> Use LoggingCategory class for valid categories. </param>
 		/// <param name="message"> Message.  Don't include timestamp. </param>
 		[System.Diagnostics.Conditional("FRAMEWORK_TRACING")]

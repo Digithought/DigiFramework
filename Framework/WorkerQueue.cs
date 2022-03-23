@@ -46,9 +46,12 @@ namespace Digithought.Framework
 					_asyncEvent.Set();
 					if (_asyncThread == null)
 					{
-						_asyncThread = new Thread(new ThreadStart(AsyncQueueServiceThread));
-						_asyncThread.IsBackground = true;	// Don't block process exit
-						_asyncThread.Priority = _priority;
+						_asyncThread = new Thread(new ThreadStart(AsyncQueueServiceThread))
+						{
+							IsBackground = true,    // Don't block process exit
+							Priority = _priority,
+							Name = action.Method.DeclaringType.Name,
+						};
 						_asyncThread.Start();
 					}
                 }
