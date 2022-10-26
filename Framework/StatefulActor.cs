@@ -12,7 +12,7 @@ namespace Digithought.Framework
 		where TState : struct
 		where TTrigger : struct
 	{
-		public StatefulActor(WorkerQueue worker = null, System.Threading.ThreadPriority? priority = null)
+		public StatefulActor(IWorkerQueue worker = null, System.Threading.ThreadPriority? priority = null)
 			: base(worker, priority)
 		{
 			_states = InitializeStates();
