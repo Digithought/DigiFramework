@@ -203,7 +203,8 @@ namespace Digithought.Framework
 					    {
 						    Act(() => { throw e; });
 					    }
-				}
+				},
+				System.Threading.Tasks.TaskContinuationOptions.ExecuteSynchronously
 			);
 		}
 
@@ -225,7 +226,8 @@ namespace Digithought.Framework
                     }
                     else
 				        Act(action);
-			    }
+			    },
+				System.Threading.Tasks.TaskContinuationOptions.ExecuteSynchronously
 			);
 		}
 
