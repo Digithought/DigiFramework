@@ -25,26 +25,34 @@
 		<DefineConstants>TRACE;FRAMEWORK_TRACING;TRACE_ACTS;TRACE_CONFIGURATION;FRAMEWORK_DATALOGGING</DefineConstants>
 	</PropertyGroup>
 	<ItemGroup>
+	  <None Include="..\DigiFramework Icon.png">
+	    <Pack>True</Pack>
+	    <PackagePath>\</PackagePath>
+	  </None>
+	  <None Include="..\README.md" Link="README.md" />
+	</ItemGroup>
+	<ItemGroup>
 	  <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
 	  <PackageReference Include="System.Reflection.Emit" Version="4.6.0" />
 		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-*" PrivateAssets="All" />
 	</ItemGroup>
 	<PropertyGroup>
-		<Version>1.1.7</Version>
+		<Version>1.1.8</Version>
 		<Authors>Nathan Allan</Authors>
 		<Company>Digithought</Company>
 		<Product>DigiFramework</Product>
 		<PackageId>DigiFramework</PackageId>
-		<AssemblyVersion>1.1.7.0</AssemblyVersion>
-		<FileVersion>1.1.7.0</FileVersion>
+		<AssemblyVersion>1.1.8.0</AssemblyVersion>
+		<FileVersion>1.1.8.0</FileVersion>
 		<NeutralLanguage>en</NeutralLanguage>
+		<LangVersion>12.0</LangVersion>
 		<Description>Light-weight actor and state machine framework.  Ideal for robotics, machine control, network communication, and more.</Description>
 		<Copyright>Copyright © 2021 Digithought LLC</Copyright>
 		<PackageProjectUrl>https://github.com/Digithought/DigiFramework</PackageProjectUrl>
-		<PackageIconUrl>https://raw.githubusercontent.com/Digithought/DigiFramework/master/DigiFramework%20Icon.png</PackageIconUrl>
 		<PackageLicenseUrl></PackageLicenseUrl>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<PackageReleaseNotes>Added WaitForState extension method</PackageReleaseNotes>
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+		<PackageIcon>DigiFramework Icon.png</PackageIcon>
 	</PropertyGroup>
 </Project>

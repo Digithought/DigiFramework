@@ -340,9 +340,9 @@ namespace Digithought.Framework
 			if (InState(inState))
 				Continue(
 					task, 
-					v => Act(() => { if (!leftState && InState(inState)) with(v); }), 
-					() => Act(canceled), 
-					e => Act(() => error(e))
+					v => Act(() => { if (!leftState && InState(inState)) with(v); }),
+					canceled != null ? () => Act(canceled) : null,
+					e => Act(() => (error ?? HandleException).Invoke(e))
 				);
 		}
 
@@ -360,8 +360,8 @@ namespace Digithought.Framework
 				Continue(
 					task,
 					() => Act(() => { if (!leftState && InState(inState)) with(); }),
-					() => Act(canceled),
-					e => Act(() => error(e))
+					canceled != null ? () => Act(canceled) : null,
+					e => Act(() => (error ?? HandleException).Invoke(e))
 				);
 		}
 	}
